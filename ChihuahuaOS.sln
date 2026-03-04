@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.Bootloader", "ChihuahuaOS.Bootloader\ChihuahuaOS.Bootloader.csproj", "{F67A7C2B-CD0C-463B-BD40-E91A64568504}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.CompilerEssentials", "ChihuahuaOS.CompilerEssentials\ChihuahuaOS.CompilerEssentials.csproj", "{38A64220-2E9C-47C7-B0C1-30326E60FF17}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

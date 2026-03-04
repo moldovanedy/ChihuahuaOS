@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsAotCompatible>true</IsAotCompatible>
+
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <NoStdLib>true</NoStdLib>
+        <NoConfig>true</NoConfig>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+        <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+        <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+
+        <IlcSystemModule>CompilerEssentials</IlcSystemModule>
+    </PropertyGroup>
+
+    <!-- The project file pretends this is .NET, but it's not .NET. Remove all assembly references the .NET SDK added. -->
+    <Target Name="CustomizeReferences" BeforeTargets="BeforeCompile" AfterTargets="FindReferenceAssembliesForReferences">
+        <ItemGroup>
+            <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)" />
+            <ReferencePath Remove="@(ReferencePath)" />
+        </ItemGroup>
+    </Target>
+
+    <!-- The AOT compiler would want to mirror these as AppContext switches. Prevent that. -->
+    <Target Name="RemoveHostConfigurationOptions" BeforeTargets="WriteIlcRspFileForCompilation" DependsOnTargets="PrepareForILLink">
+        <ItemGroup>
+            <RuntimeHostConfigurationOption Remove="@(RuntimeHostConfigurationOption)" />
+        </ItemGroup>
+    </Target>
+</Project>
