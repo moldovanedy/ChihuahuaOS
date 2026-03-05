@@ -32,10 +32,10 @@ internal static partial class ClassConstructorRunner
     private static unsafe void CheckStaticClassConstruction(ref StaticClassConstructionContext context)
     {
         // Not dealing with multithreading issues.
-        if (context.cctorMethodAddress != default)
+        if (context.cctorMethodAddress != 0)
         {
             IntPtr address = context.cctorMethodAddress;
-            context.cctorMethodAddress = default;
+            context.cctorMethodAddress = 0;
             ((delegate*<void>)address)();
         }
     }

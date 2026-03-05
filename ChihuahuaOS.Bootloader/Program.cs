@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalisys;
 using System.Runtime;
-using ChihuahuaOS.Bootloader.EfiApi;
 using ChihuahuaOS.Bootloader.EfiApi.EfiSysTable;
+using ChihuahuaOS.Bootloader.Tui;
 
 namespace ChihuahuaOS.Bootloader;
 
@@ -11,21 +12,25 @@ internal static class Program
     {
     }
 
+    [DoesNotReturn]
     [RuntimeExport("EfiMain")]
     public static unsafe int EfiMain(IntPtr imageHandle, EfiSystemTable* systemTable)
     {
-        const string HELLO = "Hello world!\r\n";
-        fixed (char* pHello = HELLO)
-        {
-            EfiStatus status = systemTable->ConOut->OutputString(systemTable->ConOut, pHello);
-            if (status != EfiStatus.Success)
-            {
-                return 1;
-            }
-        }
+        //disable the watchdog; we only need it after we try to boot
+        systemTable->BootServices->SetWatchdogTimer(0, 0, 0, null);
+        ConsoleEfi.SetSystemTableReference(systemTable);
+
+        ConsoleEfi.Clear();
+        TuiRenderer.DrawPersistentElements();
 
         while (true)
         {
+            TuiRenderer.RedrawMainContent();
+
+            //NOTE: this will only be needed when changing the context (like entering settings, closing a pop-up, etc.)
+            TuiRenderer.RedrawBottomInstructions();
+
+            _ = ConsoleEfi.ReadKey();
         }
 
         // return 0;

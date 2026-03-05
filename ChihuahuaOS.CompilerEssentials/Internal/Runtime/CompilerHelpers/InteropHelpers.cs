@@ -23,7 +23,7 @@ public static unsafe class InteropHelpers
 {
     private static IntPtr ResolvePInvoke(MethodFixupCell* pCell)
     {
-        if (pCell->Target != default)
+        if (pCell->Target != 0)
             return pCell->Target;
 
         return ResolvePInvokeSlow(pCell);
@@ -32,14 +32,14 @@ public static unsafe class InteropHelpers
     private static IntPtr ResolvePInvokeSlow(MethodFixupCell* pCell)
     {
         ModuleFixupCell* pModuleCell = pCell->Module;
-        if (pModuleCell->Handle == default)
+        if (pModuleCell->Handle == 0)
         {
-            if (pModuleCell->Handle == default)
-                Environment.FailFast(null);
+            if (pModuleCell->Handle == 0)
+                Environment.FailFast(null!);
         }
 
-        if (pCell->Target == default)
-            Environment.FailFast(null);
+        if (pCell->Target == 0)
+            Environment.FailFast(null!);
 
         return pCell->Target;
     }

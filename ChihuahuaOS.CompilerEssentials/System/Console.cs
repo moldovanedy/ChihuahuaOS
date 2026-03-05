@@ -55,6 +55,6 @@ public readonly struct ConsoleKeyInfo
     public readonly ConsoleKey Key;
 }
 
-public static partial class Console
+public static class Console
 {
 }
