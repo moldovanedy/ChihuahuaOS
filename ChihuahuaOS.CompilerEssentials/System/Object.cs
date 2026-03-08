@@ -1,27 +1,29 @@
-// bflat minimal runtime library
-// Copyright (C) 2021-2022 Michal Strehovsky
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 using System.Runtime;
 
 namespace System;
 
-public partial class Object
+public class Object
 {
-#pragma warning disable 169
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     // The layout of object is a contract with the compiler.
+    // ReSharper disable once InconsistentNaming
     internal unsafe MethodTable* m_pMethodTable;
-#pragma warning restore 169
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+
+    // Allow an object to free resources before the GC reclaims the object.
+    // This method's virtual slot number is hardcoded in runtimes. Do not add any virtual methods ahead of this.
+#pragma warning disable CA1821 // Remove empty Finalizers
+    // ReSharper disable once EmptyDestructor
+    ~Object()
+    {
+    }
+#pragma warning restore CA1821
+
+    /// <summary>Returns a string that represents the current object.</summary>
+    /// <returns>A string that represents the current object.</returns>
+    public virtual string ToString()
+    {
+        // The default for an object is to return the fully qualified name of the class.
+        return "";
+    }
 }

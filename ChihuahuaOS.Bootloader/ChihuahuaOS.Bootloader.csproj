@@ -33,10 +33,10 @@
     </Target>
 
     <!-- The AOT compiler would want to mirror these as AppContext switches. Prevent that. -->
-    <Target Name="RemoveHostConfigurationOptions" BeforeTargets="WriteIlcRspFileForCompilation" DependsOnTargets="PrepareForILLink">
-        <ItemGroup>
-            <RuntimeHostConfigurationOption Remove="@(RuntimeHostConfigurationOption)" />
-        </ItemGroup>
-    </Target>
+<!--    <Target Name="RemoveHostConfigurationOptions" BeforeTargets="WriteIlcRspFileForCompilation" DependsOnTargets="PrepareForILLink">-->
+<!--        <ItemGroup>-->
+<!--            <RuntimeHostConfigurationOption Remove="@(RuntimeHostConfigurationOption)" />-->
+<!--        </ItemGroup>-->
+<!--    </Target>-->
 
 </Project>

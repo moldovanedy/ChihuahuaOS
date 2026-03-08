@@ -1,8 +1,13 @@
 namespace System.Runtime.CompilerServices;
 
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property |
-                AttributeTargets.ReturnValue | AttributeTargets.Class | AttributeTargets.Struct |
-                AttributeTargets.Event)]
+[AttributeUsage(
+    AttributeTargets.Field
+    | AttributeTargets.Parameter
+    | AttributeTargets.Property
+    | AttributeTargets.ReturnValue
+    | AttributeTargets.Class
+    | AttributeTargets.Struct
+    | AttributeTargets.Event)]
 public sealed class TupleElementNamesAttribute : Attribute
 {
     private readonly string?[] _transformNames;

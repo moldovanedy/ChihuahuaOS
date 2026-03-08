@@ -1,37 +1,30 @@
-// bflat minimal runtime library
-// Copyright (C) 2021-2022 Michal Strehovsky
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System;
 
+[Intrinsic]
 public readonly ref struct ReadOnlySpan<T>
 {
     private readonly ref T _reference;
     private readonly int _length;
 
-    public int Length => _length;
+    // ReSharper disable once ConvertToAutoPropertyWhenPossible
+    public int Length
+    {
+        [Intrinsic] get => _length;
+    }
 
-    public ReadOnlySpan(T[] array)
+    public bool IsEmpty => _length == 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+    public ReadOnlySpan(T[]? array)
     {
         if (array == null)
         {
             this = default;
-            return;
+            return; //returns default
         }
 
         _reference = ref MemoryMarshal.GetArrayDataReference(array);
@@ -44,12 +37,16 @@ public readonly ref struct ReadOnlySpan<T>
         _length = length;
     }
 
-    public ReadOnlySpan(T[] array, int start, int length)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan(T[]? array, int start, int length)
     {
         if (array == null)
         {
             if (start != 0 || length != 0)
-                Environment.FailFast(null);
+            {
+                Environment.FailFast("Null array");
+            }
+
             this = default;
             return; // returns default
         }
@@ -59,13 +56,13 @@ public readonly ref struct ReadOnlySpan<T>
 #elif X86 || ARM
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 Environment.FailFast(null);
-#else
-        Environment.FailFast(null!);
 #endif
 
         _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start);
         _length = length;
     }
+
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
     public ref readonly T this[int index]
     {
@@ -73,7 +70,10 @@ public readonly ref struct ReadOnlySpan<T>
         get
         {
             if ((uint)index >= (uint)_length)
-                Environment.FailFast(null);
+            {
+                Environment.FailFast("Index out of range");
+            }
+
             return ref Unsafe.Add(ref _reference, (nint)(uint)index);
         }
     }

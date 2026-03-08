@@ -1,25 +1,10 @@
-// bflat minimal runtime library
-// Copyright (C) 2021-2022 Michal Strehovsky
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices;
 
-public static partial class MemoryMarshal
+public static class MemoryMarshal
 {
+    //TODO: figure this out, as it's not in the .NET CoreLib
     [Intrinsic]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ref T GetArrayDataReference<T>(T[] array)
@@ -27,12 +12,38 @@ public static partial class MemoryMarshal
         return ref Unsafe.As<byte, T>(ref Unsafe.As<RawArrayData>(array).Data);
     }
 
+    /// <summary>
+    /// Creates a new span over a portion of a regular managed object. This can be useful
+    /// if part of a managed object represents a "fixed array." This is dangerous because the
+    /// <paramref name="length"/> is not checked.
+    /// </summary>
+    /// <param name="reference">A reference to data.</param>
+    /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+    /// <returns>A span representing the specified reference and length.</returns>
+    /// <remarks>
+    /// This method should be used with caution. It is dangerous because the length argument is not checked.
+    /// Even though the ref is annotated as scoped, it will be stored into the returned span, and the lifetime
+    /// of the returned span will not be validated for safety, even by span-aware languages.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe Span<T> CreateSpan<T>(ref T reference, int length)
     {
         return new Span<T>(Unsafe.AsPointer(ref reference), length);
     }
 
+    /// <summary>
+    /// Creates a new read-only span over a portion of a regular managed object. This can be useful
+    /// if part of a managed object represents a "fixed array." This is dangerous because the
+    /// <paramref name="length"/> is not checked.
+    /// </summary>
+    /// <param name="reference">A reference to data.</param>
+    /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+    /// <returns>A read-only span representing the specified reference and length.</returns>
+    /// <remarks>
+    /// This method should be used with caution. It is dangerous because the length argument is not checked.
+    /// Even though the ref is annotated as scoped, it will be stored into the returned span, and the lifetime
+    /// of the returned span will not be validated for safety, even by span-aware languages.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length)
     {
