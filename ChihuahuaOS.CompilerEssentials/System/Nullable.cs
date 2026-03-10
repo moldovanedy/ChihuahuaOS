@@ -1,3 +1,5 @@
+using Internal.Runtime.CompilerHelpers;
+
 namespace System;
 
 public struct Nullable<T> where T : struct
@@ -12,7 +14,10 @@ public struct Nullable<T> where T : struct
         get
         {
             if (!_hasValue)
-                Environment.FailFast("Null reference");
+            {
+                ThrowHelpers.ThrowNullReferenceException();
+            }
+
             return _value;
         }
     }

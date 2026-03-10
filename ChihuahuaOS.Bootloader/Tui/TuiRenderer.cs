@@ -1,4 +1,4 @@
-using ChihuahuaOS.Bootloader.EfiApi.ConsoleSupport;
+using System;
 
 namespace ChihuahuaOS.Bootloader.Tui;
 
@@ -16,48 +16,39 @@ internal static class TuiRenderer
 
     public static void DrawPersistentElements()
     {
-        DrawRect(0, 0, ConsoleEfi.BufferWidth, 2, EfiTextColor.BackgroundGreen);
+        DrawRect(0, 0, Console.BufferWidth, 2, ConsoleColor.DarkGreen);
 
         const string CHIHUAHUA_OS = "ChihuahuaOS";
-        int col = AlignText(CHIHUAHUA_OS, 0, ConsoleEfi.BufferWidth, TextAlignment.Center);
+        int col = AlignText(CHIHUAHUA_OS, 0, Console.BufferWidth, TextAlignment.Center);
 
-        ConsoleEfi.BackgroundColor = EfiTextColor.BackgroundGreen;
-        ConsoleEfi.ForegroundColor = EfiTextColor.Black;
-        ConsoleEfi.CursorLeft = col;
-        ConsoleEfi.CursorTop = 1;
-        ConsoleEfi.Write(CHIHUAHUA_OS);
+        Console.BackgroundColor = ConsoleColor.DarkGreen;
+        Console.ForegroundColor = ConsoleColor.Black;
+        Console.CursorLeft = col;
+        Console.CursorTop = 1;
+        Console.Write(CHIHUAHUA_OS);
 
-        ConsoleEfi.BackgroundColor = EfiTextColor.BackgroundBlack;
-        ConsoleEfi.ForegroundColor = EfiTextColor.LightGray;
+        Console.BackgroundColor = ConsoleColor.Black;
+        Console.ForegroundColor = ConsoleColor.Gray;
         DrawTableMainBorders();
         DrawTableCorners();
 
         DrawRect(
             1,
-            ConsoleEfi.BufferHeight - LOWER_TABLE_HEIGHT - 2,
-            ConsoleEfi.BufferWidth - 2,
+            Console.BufferHeight - LOWER_TABLE_HEIGHT - 2,
+            Console.BufferWidth - 2,
             LOWER_TABLE_HEIGHT,
-            EfiTextColor.BackgroundBlack);
+            ConsoleColor.Black);
     }
 
     public static void RedrawBottomInstructions()
     {
-        int topLimit = ConsoleEfi.BufferHeight - 2 - LOWER_TABLE_HEIGHT;
+        int topLimit = Console.BufferHeight - 2 - LOWER_TABLE_HEIGHT;
+        Console.CursorTop = topLimit;
 
-        ConsoleEfi.CursorLeft = 2;
-        ConsoleEfi.CursorTop = topLimit;
-        if (ConsoleEfi.CanOutputString("\u2191") && ConsoleEfi.CanOutputString("\u2193"))
-        {
-            ConsoleEfi.WriteLine("\u2191 \u2193  Navigate options");
-        }
-        else
-        {
-            ConsoleEfi.WriteLine("[Up/down arrow] Navigate options");
-        }
-
-        ConsoleEfi.CursorLeft = 2;
-        ConsoleEfi.CursorTop = topLimit + 1;
-        ConsoleEfi.WriteLine(ConsoleEfi.CanOutputString("\u23ce") ? "\u23ce  Select option" : "[Enter] Select option");
+        Console.CursorLeft = 2;
+        Console.WriteLine("\u2191 \u2193  [Up/down arrow] Navigate options");
+        Console.CursorLeft = 2;
+        Console.WriteLine("\u23ce  [Enter] Select option");
     }
 
     public static void RedrawMainContent()
@@ -65,10 +56,10 @@ internal static class TuiRenderer
         DrawRect(
             1,
             TOP_TABLE_START,
-            ConsoleEfi.BufferWidth - 2,
+            Console.BufferWidth - 2,
             //we extract the upper padding, the lower table height, then the 3 borders
-            ConsoleEfi.BufferHeight - TOP_TABLE_START - LOWER_TABLE_HEIGHT - 3,
-            EfiTextColor.BackgroundBlack);
+            Console.BufferHeight - TOP_TABLE_START - LOWER_TABLE_HEIGHT - 3,
+            ConsoleColor.Black);
     }
 
     public static int AlignText(string text, int startCol, int endCol, TextAlignment alignment)
@@ -87,16 +78,16 @@ internal static class TuiRenderer
     }
 
     /// <summary>
-    /// 
     /// </summary>
     /// <param name="x"></param>
     /// <param name="y"></param>
     /// <param name="width"></param>
     /// <param name="height"></param>
     /// <param name="color">Only background colors are accepted!</param>
-    public static unsafe void DrawRect(int x, int y, int width, int height, EfiTextColor color)
+    public static unsafe void DrawRect(int x, int y, int width, int height, ConsoleColor color)
     {
-        //stack allocation is only available to this method; do not use outside 
+        //stack allocation is only available to this method; do not use outside (better as new string because it avoids
+        // a memory allocation)
         char* horizontalLine = stackalloc char[300];
         for (int i = 0; i < width; i++)
         {
@@ -104,29 +95,31 @@ internal static class TuiRenderer
         }
 
         horizontalLine[width] = '\0';
-        EfiTextColor previousColor = ConsoleEfi.BackgroundColor;
-        int previousCol = ConsoleEfi.CursorLeft;
-        int previousRow = ConsoleEfi.CursorTop;
 
-        ConsoleEfi.BackgroundColor = color;
+        ConsoleColor previousColor = Console.BackgroundColor;
+        int previousCol = Console.CursorLeft;
+        int previousRow = Console.CursorTop;
+
+        Console.BackgroundColor = color;
         for (int i = 0; i < height; i++)
         {
-            ConsoleEfi.CursorLeft = x;
-            ConsoleEfi.CursorTop = y + i;
-            ConsoleEfi.WriteRaw(horizontalLine);
+            Console.CursorLeft = x;
+            Console.CursorTop = y + i;
+            Console.WriteRaw(horizontalLine);
         }
 
-        ConsoleEfi.BackgroundColor = previousColor;
-        ConsoleEfi.CursorLeft = previousCol;
-        ConsoleEfi.CursorTop = previousRow;
+        Console.BackgroundColor = previousColor;
+        Console.CursorLeft = previousCol;
+        Console.CursorTop = previousRow;
     }
 
 
     private static unsafe void DrawTableMainBorders()
     {
-        //stack allocation is only available to this method; do not use outside 
+        int width = Console.BufferWidth - 2;
+        //stack allocation is only available to this method; do not use outside (better as new string because it avoids
+        // a memory allocation)
         char* horizontalLine = stackalloc char[300];
-        int width = ConsoleEfi.BufferWidth - 2;
         for (int i = 0; i < width; i++)
         {
             horizontalLine[i] = '\u2500';
@@ -137,31 +130,31 @@ internal static class TuiRenderer
         for (int table = 0; table < 2; table++)
         {
             //TOP_TABLE_START is the padding from above, 3 is the padding from below
-            int height = table == 0 ? ConsoleEfi.BufferHeight - TOP_TABLE_START - 3 : 4;
+            int height = table == 0 ? Console.BufferHeight - TOP_TABLE_START - 3 : 4;
 
-            int top = table == 0 ? TOP_TABLE_START - 1 : ConsoleEfi.BufferHeight - LOWER_TABLE_HEIGHT - 3;
-            int bottom = table == 0 ? height : ConsoleEfi.BufferHeight - 2;
+            int top = table == 0 ? TOP_TABLE_START - 1 : Console.BufferHeight - LOWER_TABLE_HEIGHT - 3;
+            int bottom = table == 0 ? height : Console.BufferHeight - 2;
 
-            ConsoleEfi.CursorLeft = 1;
-            ConsoleEfi.CursorTop = top;
-            ConsoleEfi.WriteRaw(horizontalLine);
+            Console.CursorLeft = 1;
+            Console.CursorTop = top;
+            Console.WriteRaw(horizontalLine);
 
-            ConsoleEfi.CursorLeft = 1;
-            ConsoleEfi.CursorTop = bottom;
-            ConsoleEfi.WriteRaw(horizontalLine);
+            Console.CursorLeft = 1;
+            Console.CursorTop = bottom;
+            Console.WriteRaw(horizontalLine);
 
             for (int i = top + 1; i < bottom; i++)
             {
-                ConsoleEfi.CursorLeft = 0;
-                ConsoleEfi.CursorTop = i;
-                ConsoleEfi.Write("\u2502");
+                Console.CursorLeft = 0;
+                Console.CursorTop = i;
+                Console.Write("\u2502");
             }
 
             for (int i = top + 1; i < bottom; i++)
             {
-                ConsoleEfi.CursorLeft = ConsoleEfi.BufferWidth - 1;
-                ConsoleEfi.CursorTop = i;
-                ConsoleEfi.Write("\u2502");
+                Console.CursorLeft = Console.BufferWidth - 1;
+                Console.CursorTop = i;
+                Console.Write("\u2502");
             }
         }
     }
@@ -169,29 +162,29 @@ internal static class TuiRenderer
     private static void DrawTableCorners()
     {
         //order is: top-left, top-right, bottom-right, bottom-left, left connector, right connector 
-        ConsoleEfi.CursorLeft = 0;
-        ConsoleEfi.CursorTop = TOP_TABLE_START - 1;
-        ConsoleEfi.Write("\u250c");
+        Console.CursorLeft = 0;
+        Console.CursorTop = TOP_TABLE_START - 1;
+        Console.Write("\u250c");
 
-        ConsoleEfi.CursorLeft = ConsoleEfi.BufferWidth - 1;
-        ConsoleEfi.CursorTop = TOP_TABLE_START - 1;
-        ConsoleEfi.Write("\u2510");
+        Console.CursorLeft = Console.BufferWidth - 1;
+        Console.CursorTop = TOP_TABLE_START - 1;
+        Console.Write("\u2510");
 
-        ConsoleEfi.CursorLeft = ConsoleEfi.BufferWidth - 1;
-        ConsoleEfi.CursorTop = ConsoleEfi.BufferHeight - 2;
-        ConsoleEfi.Write("\u2518");
+        Console.CursorLeft = Console.BufferWidth - 1;
+        Console.CursorTop = Console.BufferHeight - 2;
+        Console.Write("\u2518");
 
-        ConsoleEfi.CursorLeft = 0;
-        ConsoleEfi.CursorTop = ConsoleEfi.BufferHeight - 2;
-        ConsoleEfi.Write("\u2514");
+        Console.CursorLeft = 0;
+        Console.CursorTop = Console.BufferHeight - 2;
+        Console.Write("\u2514");
 
 
-        ConsoleEfi.CursorLeft = 0;
-        ConsoleEfi.CursorTop = ConsoleEfi.BufferHeight - LOWER_TABLE_HEIGHT - 3;
-        ConsoleEfi.Write("\u251c");
+        Console.CursorLeft = 0;
+        Console.CursorTop = Console.BufferHeight - LOWER_TABLE_HEIGHT - 3;
+        Console.Write("\u251c");
 
-        ConsoleEfi.CursorLeft = ConsoleEfi.BufferWidth - 1;
-        ConsoleEfi.CursorTop = ConsoleEfi.BufferHeight - LOWER_TABLE_HEIGHT - 3;
-        ConsoleEfi.Write("\u2524");
+        Console.CursorLeft = Console.BufferWidth - 1;
+        Console.CursorTop = Console.BufferHeight - LOWER_TABLE_HEIGHT - 3;
+        Console.Write("\u2524");
     }
 }

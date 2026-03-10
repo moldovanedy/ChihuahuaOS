@@ -1,5 +1,6 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System;
 
@@ -7,25 +8,25 @@ public static class Math
 {
     internal static int ConvertToInt32Checked(double value)
     {
-        Environment.FailFast("Not implemented");
+        ThrowHelpers.ThrowNotImplementedException();
         return 0;
     }
 
     internal static uint ConvertToUInt32Checked(double value)
     {
-        Environment.FailFast("Not implemented");
+        ThrowHelpers.ThrowNotImplementedException();
         return 0;
     }
 
     internal static long ConvertToInt64Checked(double value)
     {
-        Environment.FailFast("Not implemented");
+        ThrowHelpers.ThrowNotImplementedException();
         return 0;
     }
 
     internal static ulong ConvertToUInt64Checked(double value)
     {
-        Environment.FailFast("Not implemented");
+        ThrowHelpers.ThrowNotImplementedException();
         return 0;
     }
 
@@ -36,10 +37,10 @@ public static class Math
             switch (divisor)
             {
                 case 0:
-                    Environment.FailFast("Div by 0");
+                    ThrowHelpers.ThrowDivideByZeroException();
                     return 0;
                 case -1 when dividend == int.MinValue:
-                    Environment.FailFast("Div cannot be min value");
+                    ThrowHelpers.ThrowArgumentException();
                     return 0;
                 case -1:
                     return -dividend;
@@ -53,7 +54,7 @@ public static class Math
     {
         if (divisor == 0)
         {
-            Environment.FailFast("Div by 0");
+            ThrowHelpers.ThrowDivideByZeroException();
             return 0;
         }
 
@@ -67,10 +68,10 @@ public static class Math
             switch ((int)divisor)
             {
                 case 0:
-                    Environment.FailFast("Div by 0");
+                    ThrowHelpers.ThrowDivideByZeroException();
                     return 0;
                 case -1 when dividend == long.MinValue:
-                    Environment.FailFast("Div cannot be min value");
+                    ThrowHelpers.ThrowArgumentException();
                     return 0;
                 case -1:
                     return -dividend;
@@ -91,7 +92,7 @@ public static class Math
         {
             if ((uint)divisor == 0)
             {
-                Environment.FailFast("Div by 0");
+                ThrowHelpers.ThrowDivideByZeroException();
                 return 0;
             }
 
@@ -111,13 +112,13 @@ public static class Math
             switch (divisor)
             {
                 case 0:
-                    Environment.FailFast("Div by 0");
+                    ThrowHelpers.ThrowDivideByZeroException();
                     return 0;
                 case -1:
                 {
                     if (dividend == int.MinValue)
                     {
-                        Environment.FailFast("Div cannot be min value");
+                        ThrowHelpers.ThrowArgumentException();
                     }
 
                     return 0;
@@ -132,7 +133,7 @@ public static class Math
     {
         if (divisor == 0)
         {
-            Environment.FailFast("Div by 0");
+            ThrowHelpers.ThrowDivideByZeroException();
             return 0;
         }
 
@@ -146,10 +147,10 @@ public static class Math
             switch ((int)divisor)
             {
                 case 0:
-                    Environment.FailFast("Div by 0");
+                    ThrowHelpers.ThrowDivideByZeroException();
                     return 0;
                 case -1 when dividend == long.MinValue:
-                    Environment.FailFast("Div cannot be min value");
+                    ThrowHelpers.ThrowArgumentException();
                     return 0;
                 case -1:
                     return 0;
@@ -170,7 +171,7 @@ public static class Math
         {
             if ((uint)divisor == 0)
             {
-                Environment.FailFast("Div by 0");
+                ThrowHelpers.ThrowDivideByZeroException();
                 return 0;
             }
 

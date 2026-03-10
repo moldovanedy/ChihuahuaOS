@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
-using ChihuahuaOS.Bootloader.EfiApi.EfiSysTable;
+using ChihuahuaOS.EfiApi.EfiSysTable;
 
-namespace ChihuahuaOS.Bootloader.EfiApi.BootServices;
+namespace ChihuahuaOS.EfiApi.BootServices;
 
 [StructLayout(LayoutKind.Sequential)]
 public readonly unsafe struct EfiBootServices
@@ -23,8 +23,8 @@ public readonly unsafe struct EfiBootServices
     private readonly IntPtr _AllocatePages;
     private readonly IntPtr _FreePages;
     private readonly IntPtr _GetMemoryMap;
-    private readonly IntPtr _AllocatePool;
-    private readonly IntPtr _FreePool;
+    public readonly delegate* unmanaged<EfiMemoryType, ulong, void**, EfiStatus> AllocatePool;
+    public readonly delegate* unmanaged<void*, EfiStatus> FreePool;
 
     //
     // Event & timer functions
@@ -34,8 +34,8 @@ public readonly unsafe struct EfiBootServices
     private readonly IntPtr _SetTimer;
 
     /// <summary>
-    /// The first parameter represents the number of events in the events array, the second parameter is the number of
-    /// events, and the third parameter is an out pointer for the index of the event that fired.
+    ///     The first parameter represents the number of events in the events array, the second parameter is the number of
+    ///     events, and the third parameter is an out pointer for the index of the event that fired.
     /// </summary>
     public readonly delegate* unmanaged<ulong, EfiEvent*, ulong*, EfiStatus> WaitForEvent;
 
@@ -75,8 +75,8 @@ public readonly unsafe struct EfiBootServices
     private readonly IntPtr Stall;
 
     /// <summary>
-    /// The first param is the number of seconds for the watchdog timer (0 disables it completely). The others can be
-    /// 0.
+    ///     The first param is the number of seconds for the watchdog timer (0 disables it completely). The others can be
+    ///     0.
     /// </summary>
     public readonly delegate* unmanaged<ulong, ulong, ulong, char*, EfiStatus> SetWatchdogTimer;
 

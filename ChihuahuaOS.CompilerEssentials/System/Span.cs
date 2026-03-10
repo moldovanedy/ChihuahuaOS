@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System;
 
@@ -36,7 +37,7 @@ public readonly ref struct Span<T>
         {
             if (start != 0 || length != 0)
             {
-                Environment.FailFast("You cannot have a null array, but set start or length");
+                ThrowHelpers.ThrowIndexOutOfRangeException();
                 _reference = default!;
                 return;
             }
@@ -48,7 +49,7 @@ public readonly ref struct Span<T>
 
         if ((uint)start + (uint)length > (uint)array.Length)
         {
-            Environment.FailFast("Range out of array bounds");
+            ThrowHelpers.ThrowIndexOutOfRangeException();
         }
 
 // #if X64 || ARM64
@@ -72,7 +73,7 @@ public readonly ref struct Span<T>
         {
             if ((uint)index >= (uint)_length)
             {
-                Environment.FailFast("Index out of bounds");
+                ThrowHelpers.ThrowIndexOutOfRangeException();
             }
 
             return ref Unsafe.Add(ref _reference, (nint)(uint)index);

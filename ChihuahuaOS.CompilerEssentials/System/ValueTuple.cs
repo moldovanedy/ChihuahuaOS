@@ -1,3 +1,5 @@
+using Internal.Runtime.CompilerHelpers;
+
 namespace System;
 
 public readonly struct ValueTuple<T1>
@@ -15,7 +17,7 @@ public readonly struct ValueTuple<T1>
         {
             if (index != 0)
             {
-                Environment.FailFast("Index out of range");
+                ThrowHelpers.ThrowIndexOutOfRangeException();
                 return null;
             }
 
@@ -50,7 +52,7 @@ public readonly struct ValueTuple<T1, T2>
                 case 1:
                     return Item2;
                 default:
-                    Environment.FailFast("Index out of range");
+                    ThrowHelpers.ThrowIndexOutOfRangeException();
                     return null;
             }
         }
@@ -87,7 +89,7 @@ public readonly struct ValueTuple<T1, T2, T3>
                 case 2:
                     return Item3;
                 default:
-                    Environment.FailFast("Index out of range");
+                    ThrowHelpers.ThrowIndexOutOfRangeException();
                     return null;
             }
         }

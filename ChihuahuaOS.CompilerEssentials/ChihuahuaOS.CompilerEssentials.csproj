@@ -11,25 +11,21 @@
         <NoStdLib>true</NoStdLib>
         <NoConfig>true</NoConfig>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-
-        <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
-        <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-
-        <IlcSystemModule>CompilerEssentials</IlcSystemModule>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(SolutionFilterName)' == 'ChihuahuaOS.Bootloader.Filter'">
+        <DefineConstants>$(DefineConstants);UEFI</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
+    </ItemGroup>
+
     <!-- The project file pretends this is .NET, but it's not .NET. Remove all assembly references the .NET SDK added. -->
-    <Target Name="CustomizeReferences" BeforeTargets="BeforeCompile" AfterTargets="FindReferenceAssembliesForReferences">
+    <Target AfterTargets="FindReferenceAssembliesForReferences" BeforeTargets="BeforeCompile" Name="CustomizeReferences">
         <ItemGroup>
             <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)" />
             <ReferencePath Remove="@(ReferencePath)" />
         </ItemGroup>
     </Target>
-
-    <!-- The AOT compiler would want to mirror these as AppContext switches. Prevent that. -->
-    <!--    <Target Name="RemoveHostConfigurationOptions" BeforeTargets="WriteIlcRspFileForCompilation" DependsOnTargets="PrepareForILLink">-->
-    <!--        <ItemGroup>-->
-    <!--            <RuntimeHostConfigurationOption Remove="@(RuntimeHostConfigurationOption)" />-->
-    <!--        </ItemGroup>-->
-    <!--    </Target>-->
 </Project>

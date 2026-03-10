@@ -25,6 +25,4 @@ qemu-system-x86_64 \
   -boot order=d \
   -serial file:debug.log \
   -monitor stdio \
-  -d int \
-  -no-reboot \
-  -no-shutdown
+  -d int

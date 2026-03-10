@@ -2,7 +2,7 @@ using System.Runtime;
 
 namespace System;
 
-public class Object
+public partial class Object
 {
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     // The layout of object is a contract with the compiler.
@@ -20,7 +20,6 @@ public class Object
 #pragma warning restore CA1821
 
     /// <summary>Returns a string that represents the current object.</summary>
-    /// <returns>A string that represents the current object.</returns>
     public virtual string ToString()
     {
         // The default for an object is to return the fully qualified name of the class.

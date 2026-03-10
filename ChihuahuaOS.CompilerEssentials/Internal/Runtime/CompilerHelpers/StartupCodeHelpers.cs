@@ -1,75 +1,70 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using ChihuahuaOS.EfiApi;
+using ChihuahuaOS.EfiApi.BootServices;
 
 namespace Internal.Runtime.CompilerHelpers;
 
-// A class that the compiler looks for that has helpers to initialize the
-// process. The compiler can gracefully handle the helpers not being present,
-// but the class itself being absent is unhandled. Let's add an empty class.
+/// <summary>
+/// Contains all the internals for object memory allocation and GC.
+/// </summary>
 public unsafe class StartupCodeHelpers
 {
     // A couple symbols the generated code will need we park them in this class
     // for no particular reason. These aid in transitioning to/from managed code.
     // Since we don't have a GC, the transition is a no-op.
     [RuntimeExport("RhpReversePInvoke")]
-    private static void RhpReversePInvoke(IntPtr frame)
+    internal static void RhpReversePInvoke(IntPtr frame)
     {
     }
 
     [RuntimeExport("RhpReversePInvokeReturn")]
-    private static void RhpReversePInvokeReturn(IntPtr frame)
+    internal static void RhpReversePInvokeReturn(IntPtr frame)
     {
     }
 
     [RuntimeExport("RhpPInvoke")]
-    private static void RhpPInvoke(IntPtr frame)
+    internal static void RhpPInvoke(IntPtr frame)
     {
     }
 
     [RuntimeExport("RhpPInvokeReturn")]
-    private static void RhpPInvokeReturn(IntPtr frame)
+    internal static void RhpPInvokeReturn(IntPtr frame)
     {
     }
 
     [RuntimeExport("RhpGcPoll")]
-    private static void RhpGcPoll()
+    internal static void RhpGcPoll()
     {
     }
 
     [RuntimeExport("RhpFallbackFailFast")]
-    private static void RhpFallbackFailFast()
+    internal static void RhpFallbackFailFast()
     {
         Environment.FailFast("Fail fast called");
     }
 
     [RuntimeExport("RhpNewFast")]
-    private static unsafe void* RhpNewFast(MethodTable* pMT)
+    internal static void* RhpNewFast(MethodTable* pMt)
     {
-        // MethodTable** result = AllocObject(pMT->_uBaseSize);
-        // *result = pMT;
-        // return result;
-
-        return (void*)0;
+        MethodTable** result = AllocObject(pMt->_uBaseSize);
+        *result = pMt;
+        return result;
     }
 
     [RuntimeExport("RhpNewArray")]
-    private static unsafe void* RhpNewArray(MethodTable* pMT, int numElements)
+    internal static void* RhpNewArray(MethodTable* pMt, int numElements)
     {
-        // if (numElements < 0)
-        //     Environment.FailFast(null);
-        //
-        // MethodTable** result = AllocObject((uint)(pMT->_uBaseSize + numElements * pMT->_usComponentSize));
-        // *result = pMT;
-        // *(int*)(result + 1) = numElements;
-        // return result;
+        if (numElements < 0)
+        {
+            Environment.FailFast("RhpNewArray Bad numElements");
+        }
 
-        return (void*)0;
-    }
-
-    internal struct ArrayElement
-    {
-        public object Value;
+        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
+        *result = pMt;
+        *(int*)(result + 1) = numElements;
+        return result;
     }
 
     [RuntimeExport("RhpStelemRef")]
@@ -93,38 +88,40 @@ public unsafe class StartupCodeHelpers
     }
 
     [RuntimeExport("RhpCheckedAssignRef")]
-    public static unsafe void RhpCheckedAssignRef(void** dst, void* r)
+    public static void RhpCheckedAssignRef(void** dst, void* r)
     {
         *dst = r;
     }
 
     [RuntimeExport("RhpAssignRef")]
-    public static unsafe void RhpAssignRef(void** dst, void* r)
+    public static void RhpAssignRef(void** dst, void* r)
     {
         *dst = r;
     }
 
-//         static unsafe MethodTable** AllocObject(uint size)
-//         {
-// #if WINDOWS
-//             [DllImport("kernel32"), SuppressGCTransition]
-//             static extern MethodTable** LocalAlloc(uint flags, uint size);
-//             MethodTable** result = LocalAlloc(0x40, size);
-// #elif LINUX
-//             [DllImport("libSystem.Native"), SuppressGCTransition]
-//             static extern MethodTable** SystemNative_Malloc(nuint size);
-//             MethodTable** result = SystemNative_Malloc(size);
-// #elif UEFI
-//             MethodTable** result;
-//             if (EfiSystemTable->BootServices->AllocatePool(2 /* LoaderData*/, (nint)size, (void**)&result) != 0)
-//                 result = null;
-// #else
-// #error Nope
-// #endif
-//
-//             if (result == null)
-//                 Environment.FailFast(null);
-//
-//             return result;
-//         }
+    private static MethodTable** AllocObject(uint size)
+    {
+        MethodTable** result;
+
+#if UEFI || DEBUG
+        EfiStatus status =
+            Environment.EfiSysTable->BootServices->AllocatePool(EfiMemoryType.EfiLoaderData, size, (void**)&result);
+        if (status != EfiStatus.Success)
+        {
+            result = null;
+        }
+#endif
+
+        if (result == null)
+        {
+            Environment.FailFast("Allocation failed");
+        }
+
+        return result;
+    }
+
+    internal struct ArrayElement
+    {
+        public object Value;
+    }
 }

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalisys;
 using System.Runtime;
-using ChihuahuaOS.Bootloader.EfiApi.EfiSysTable;
 using ChihuahuaOS.Bootloader.Tui;
+using ChihuahuaOS.EfiApi.EfiSysTable;
 
 namespace ChihuahuaOS.Bootloader;
 
@@ -18,9 +18,9 @@ internal static class Program
     {
         //disable the watchdog; we only need it after we try to boot
         systemTable->BootServices->SetWatchdogTimer(0, 0, 0, null);
-        ConsoleEfi.SetSystemTableReference(systemTable);
+        Environment.SetEfiSystemTableReference(systemTable);
 
-        ConsoleEfi.Clear();
+        Console.Clear();
         TuiRenderer.DrawPersistentElements();
 
         while (true)
@@ -30,7 +30,7 @@ internal static class Program
             //NOTE: this will only be needed when changing the context (like entering settings, closing a pop-up, etc.)
             TuiRenderer.RedrawBottomInstructions();
 
-            _ = ConsoleEfi.ReadKey();
+            _ = Console.ReadKey();
         }
 
         // return 0;

@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.Bootloader", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.CompilerEssentials", "ChihuahuaOS.CompilerEssentials\ChihuahuaOS.CompilerEssentials.csproj", "{38A64220-2E9C-47C7-B0C1-30326E60FF17}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.EfiApi", "ChihuahuaOS.EfiApi\ChihuahuaOS.EfiApi.csproj", "{26229BE9-4641-4CAE-BE98-3D439B205ACD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

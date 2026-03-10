@@ -1,8 +1,9 @@
 using System.Runtime.InteropServices;
-using ChihuahuaOS.Bootloader.EfiApi.BootServices;
-using ChihuahuaOS.Bootloader.EfiApi.ConsoleSupport;
+using ChihuahuaOS.EfiApi.BootServices;
+using ChihuahuaOS.EfiApi.ConsoleSupport;
+using ChihuahuaOS.EfiApi.RuntimeServices;
 
-namespace ChihuahuaOS.Bootloader.EfiApi.EfiSysTable;
+namespace ChihuahuaOS.EfiApi.EfiSysTable;
 
 [StructLayout(LayoutKind.Sequential)]
 public readonly unsafe struct EfiSystemTable
@@ -16,7 +17,7 @@ public readonly unsafe struct EfiSystemTable
     public readonly EfiSimpleTextOutputProtocol* ConOut;
     public readonly EfiHandle StandardErrorHandle;
     public readonly void* StdErr;
-    public readonly void* RuntimeServices;
+    public readonly EfiRuntimeServices* RuntimeServices;
     public readonly EfiBootServices* BootServices;
     public readonly uint NumberOfTableEntries;
     public readonly void* ConfigurationTable;

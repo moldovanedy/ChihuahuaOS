@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace ChihuahuaOS.Bootloader.EfiApi.EfiSysTable;
+namespace ChihuahuaOS.EfiApi.EfiSysTable;
 
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct EfiTableHeader

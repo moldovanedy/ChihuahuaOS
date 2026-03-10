@@ -1,21 +1,4 @@
-using System;
-using System.Runtime.InteropServices;
-
-namespace ChihuahuaOS.Bootloader.EfiApi;
-
-[StructLayout(LayoutKind.Sequential)]
-public struct EfiHandle
-{
-    private IntPtr _handle;
-
-    internal const ulong EFI_ERROR_MASK = 0x8000000000000000;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-public struct EfiEvent
-{
-    private IntPtr _handle;
-}
+namespace ChihuahuaOS.EfiApi;
 
 public enum EfiStatus : ulong
 {

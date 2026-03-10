@@ -35,12 +35,12 @@ public static unsafe class InteropHelpers
         ModuleFixupCell* pModuleCell = pCell->Module;
         if (pModuleCell->Handle == 0)
         {
-            Environment.FailFast("Handle was null");
+            ThrowHelpers.ThrowNullReferenceException();
         }
 
         if (pCell->Target == 0)
         {
-            Environment.FailFast("Target was null");
+            ThrowHelpers.ThrowNullReferenceException();
         }
 
         return pCell->Target;

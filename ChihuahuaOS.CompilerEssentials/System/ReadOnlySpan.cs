@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System;
 
@@ -44,7 +45,7 @@ public readonly ref struct ReadOnlySpan<T>
         {
             if (start != 0 || length != 0)
             {
-                Environment.FailFast("Null array");
+                ThrowHelpers.ThrowArgumentException();
             }
 
             this = default;
@@ -71,7 +72,7 @@ public readonly ref struct ReadOnlySpan<T>
         {
             if ((uint)index >= (uint)_length)
             {
-                Environment.FailFast("Index out of range");
+                ThrowHelpers.ThrowIndexOutOfRangeException();
             }
 
             return ref Unsafe.Add(ref _reference, (nint)(uint)index);
