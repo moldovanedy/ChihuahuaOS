@@ -9,7 +9,7 @@ namespace Internal.Runtime.CompilerHelpers;
 /// <summary>
 /// Contains all the internals for object memory allocation and GC.
 /// </summary>
-public unsafe class StartupCodeHelpers
+internal unsafe class StartupCodeHelpers
 {
     // A couple symbols the generated code will need we park them in this class
     // for no particular reason. These aid in transitioning to/from managed code.
@@ -55,6 +55,20 @@ public unsafe class StartupCodeHelpers
 
     [RuntimeExport("RhpNewArray")]
     internal static void* RhpNewArray(MethodTable* pMt, int numElements)
+    {
+        if (numElements < 0)
+        {
+            Environment.FailFast("RhpNewArray Bad numElements");
+        }
+
+        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
+        *result = pMt;
+        *(int*)(result + 1) = numElements;
+        return result;
+    }
+
+    [RuntimeExport("RhpNewArrayFast")]
+    internal static void* RhpNewArrayFast(MethodTable* pMt, int numElements)
     {
         if (numElements < 0)
         {

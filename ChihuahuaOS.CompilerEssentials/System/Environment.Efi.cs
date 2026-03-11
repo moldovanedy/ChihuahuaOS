@@ -1,9 +1,9 @@
+#if UEFI || DEBUG
+
 using System.Diagnostics.CodeAnalisys;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.EfiSysTable;
 using ChihuahuaOS.EfiApi.RuntimeServices;
-
-#if UEFI || DEBUG
 
 namespace System;
 
@@ -32,6 +32,11 @@ public static unsafe class Environment
 
     #region EFI specific
 
+    /// <summary>
+    /// This is only used on EFI platforms. Sets the pointer to the EFI system table, used by most services.
+    /// Call this as soon as the program starts.
+    /// </summary>
+    /// <param name="systemTable"></param>
     public static void SetEfiSystemTableReference(EfiSystemTable* systemTable)
     {
         EfiSysTable = systemTable;

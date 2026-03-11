@@ -154,8 +154,87 @@ public static unsafe partial class Console
         EfiInputKey input = default;
         st->ConIn->ReadKeyStroke(st->ConIn, &input);
 
-        //TODO: correctly translate the scan code to ConsoleKey
-        return new ConsoleKeyInfo(input.UnicodeChar, (ConsoleKey)input.ScanCode, false, false, false);
+        ushort unicodeChar = input.UnicodeChar;
+        var key = ConsoleKey.None;
+
+        if (unicodeChar == 0)
+        {
+            ushort scanCode = input.ScanCode;
+
+            //defined in the EFI standard, Appendix B, table B.1
+            switch (scanCode)
+            {
+                case 0x01:
+                    key = ConsoleKey.UpArrow;
+                    break;
+                case 0x02:
+                    key = ConsoleKey.DownArrow;
+                    break;
+                case 0x03:
+                    key = ConsoleKey.RightArrow;
+                    break;
+                case 0x04:
+                    key = ConsoleKey.LeftArrow;
+                    break;
+                case 0x05:
+                    key = ConsoleKey.Home;
+                    break;
+                case 0x06:
+                    key = ConsoleKey.End;
+                    break;
+                case 0x07:
+                    key = ConsoleKey.Insert;
+                    break;
+                case 0x08:
+                    key = ConsoleKey.Delete;
+                    break;
+                case 0x09:
+                    key = ConsoleKey.PageUp;
+                    break;
+                case 0x0a:
+                    key = ConsoleKey.PageDown;
+                    break;
+                case 0x0b:
+                    key = ConsoleKey.F1;
+                    break;
+                case 0x0c:
+                    key = ConsoleKey.F2;
+                    break;
+                case 0x0d:
+                    key = ConsoleKey.F3;
+                    break;
+                case 0x0e:
+                    key = ConsoleKey.F4;
+                    break;
+                case 0x0f:
+                    key = ConsoleKey.F5;
+                    break;
+                case 0x10:
+                    key = ConsoleKey.F6;
+                    break;
+                case 0x11:
+                    key = ConsoleKey.F7;
+                    break;
+                case 0x12:
+                    key = ConsoleKey.F8;
+                    break;
+                case 0x13:
+                    key = ConsoleKey.F9;
+                    break;
+                case 0x14:
+                    key = ConsoleKey.F10;
+                    break;
+                case 0x17:
+                    key = ConsoleKey.Escape;
+                    break;
+            }
+        }
+        else
+        {
+            key = (ConsoleKey)unicodeChar;
+        }
+
+        return new ConsoleKeyInfo(input.UnicodeChar, key, false, false, false);
     }
 
     public static void WriteLine(string message)

@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.CompilerHelpers;
 
-public static unsafe class InteropHelpers
+internal static unsafe class InteropHelpers
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct ModuleFixupCell

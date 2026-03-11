@@ -1,9 +1,10 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Extra.Runtime;
 
 namespace System;
 
-public abstract class Array
+public abstract class Array : IDisposable
 {
     private static class EmptyArray<T>
     {
@@ -28,6 +29,11 @@ public abstract class Array
     {
         return EmptyArray<T>.Value;
     }
+
+    public void Dispose()
+    {
+        MemUtils.FreeMemory(this);
+    }
 }
 
 internal class Array<T> : Array
@@ -37,7 +43,10 @@ internal class Array<T> : Array
 [StructLayout(LayoutKind.Sequential)]
 internal class RawArrayData
 {
-    public uint Length; // Array._numComponents padded to IntPtr
+    public uint Length;
+
+    // Array._numComponents padded to IntPtr
     public uint Padding;
+
     public byte Data;
 }

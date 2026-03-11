@@ -23,14 +23,11 @@ internal static class Program
         Console.Clear();
         TuiRenderer.DrawPersistentElements();
 
+        ConsoleKeyInfo keyStroke = new();
         while (true)
         {
-            TuiRenderer.RedrawMainContent();
-
-            //NOTE: this will only be needed when changing the context (like entering settings, closing a pop-up, etc.)
-            TuiRenderer.RedrawBottomInstructions();
-
-            _ = Console.ReadKey();
+            TuiRenderer.RedrawMainContent(keyStroke);
+            keyStroke = Console.ReadKey();
         }
 
         // return 0;

@@ -6,7 +6,7 @@ public class RuntimeHelpers
 {
     public static unsafe int OffsetToStringData => sizeof(nint) + sizeof(int);
 
-    public static unsafe MethodTable* GetMethodTable(object obj)
+    internal static unsafe MethodTable* GetMethodTable(object obj)
     {
         return obj.m_pMethodTable;
     }

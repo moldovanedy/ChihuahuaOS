@@ -6,6 +6,51 @@ namespace System;
 
 public static class Math
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static short Abs(short value)
+    {
+        if (value < 0)
+        {
+            value = (short)-value;
+            if (value < 0)
+            {
+                ThrowHelpers.ThrowOverflowException();
+            }
+        }
+
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int Abs(int value)
+    {
+        if (value < 0)
+        {
+            value = -value;
+            if (value < 0)
+            {
+                ThrowHelpers.ThrowOverflowException();
+            }
+        }
+
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static long Abs(long value)
+    {
+        if (value < 0)
+        {
+            value = -value;
+            if (value < 0)
+            {
+                ThrowHelpers.ThrowOverflowException();
+            }
+        }
+
+        return value;
+    }
+
     internal static int ConvertToInt32Checked(double value)
     {
         ThrowHelpers.ThrowNotImplementedException();

@@ -1,7 +1,7 @@
 namespace System.Runtime;
 
 //this is a contract with the compiler, don't change the ordering and names
-public unsafe struct MethodTable
+internal unsafe struct MethodTable
 {
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     // ReSharper disable InconsistentNaming

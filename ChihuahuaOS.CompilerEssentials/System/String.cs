@@ -1,10 +1,11 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using Extra.Runtime;
 using Internal.Runtime.CompilerHelpers;
 
 namespace System;
 
-public sealed class String
+public sealed class String : IDisposable
 {
     //internal ordering! DO NOT modify; also that's how it's supposed to have the auto-property
 #pragma warning disable CS0649 // Field is never assigned to
@@ -149,9 +150,22 @@ public sealed class String
 
     #region Methods
 
+    /// <summary>
+    /// Unlike in regular .NET, this actually creates a completely new string with the same contents.
+    /// </summary>
+    /// <returns></returns>
     public string Clone()
     {
-        return this;
+        string result = FastNewString(Length);
+        for (int i = 0; i < Length; i++)
+        {
+            Unsafe.Add(ref result._firstChar, i) = this[i];
+        }
+
+        //this is safe, as we always allocate one more char
+        Unsafe.Add(ref result._firstChar, Length) = '\0';
+
+        return result;
     }
 
     public bool EndsWith(char value)
@@ -365,6 +379,14 @@ public sealed class String
 
     #endregion
 
+    #region Interface implementation
+
+    public void Dispose()
+    {
+        MemUtils.FreeMemory(this);
+    }
+
+    #endregion
 
     private static void CopyStringContent(string dest, int destPos, string src)
     {

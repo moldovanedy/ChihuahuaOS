@@ -7,4 +7,9 @@ public struct Char
 
     public const char MinValue = (char)0x00;
     // ReSharper restore InconsistentNaming
+
+    public override string ToString()
+    {
+        return new string(this, 1);
+    }
 }

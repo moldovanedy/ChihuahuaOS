@@ -11,8 +11,13 @@ internal static class TuiRenderer
         Right
     }
 
-    private const int LOWER_TABLE_HEIGHT = 4;
-    private const int TOP_TABLE_START = 3;
+    internal const int LOWER_TABLE_HEIGHT = 4;
+    internal const int TOP_TABLE_START = 3;
+
+    /// <summary>
+    /// True if it's the main screen, false if it's the settings screen, null if this is the initial boot.
+    /// </summary>
+    private static bool? _isMainScreen;
 
     public static void DrawPersistentElements()
     {
@@ -40,27 +45,19 @@ internal static class TuiRenderer
             ConsoleColor.Black);
     }
 
-    public static void RedrawBottomInstructions()
+    public static void RedrawMainContent(ConsoleKeyInfo newKeyStroke)
     {
-        int topLimit = Console.BufferHeight - 2 - LOWER_TABLE_HEIGHT;
-        Console.CursorTop = topLimit;
+        if (_isMainScreen == null)
+        {
+            MainScreen.OnEnterScreen();
+            _isMainScreen = true;
+        }
 
-        Console.CursorLeft = 2;
-        Console.WriteLine("\u2191 \u2193  [Up/down arrow] Navigate options");
-        Console.CursorLeft = 2;
-        Console.WriteLine("\u23ce  [Enter] Select option");
+        MainScreen.DrawMain(newKeyStroke);
     }
 
-    public static void RedrawMainContent()
-    {
-        DrawRect(
-            1,
-            TOP_TABLE_START,
-            Console.BufferWidth - 2,
-            //we extract the upper padding, the lower table height, then the 3 borders
-            Console.BufferHeight - TOP_TABLE_START - LOWER_TABLE_HEIGHT - 3,
-            ConsoleColor.Black);
-    }
+
+    #region Utils
 
     public static int AlignText(string text, int startCol, int endCol, TextAlignment alignment)
     {
@@ -113,12 +110,14 @@ internal static class TuiRenderer
         Console.CursorTop = previousRow;
     }
 
+    #endregion
+
 
     private static unsafe void DrawTableMainBorders()
     {
         int width = Console.BufferWidth - 2;
-        //stack allocation is only available to this method; do not use outside (better as new string because it avoids
-        // a memory allocation)
+        //stack allocation is only available to this method; do not use outside (better than a new string because
+        // it avoids a memory allocation)
         char* horizontalLine = stackalloc char[300];
         for (int i = 0; i < width; i++)
         {
