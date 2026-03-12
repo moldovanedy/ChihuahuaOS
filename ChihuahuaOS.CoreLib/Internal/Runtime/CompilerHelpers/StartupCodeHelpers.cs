@@ -72,7 +72,21 @@ internal unsafe class StartupCodeHelpers
     {
         if (numElements < 0)
         {
-            Environment.FailFast("RhpNewArray Bad numElements");
+            Environment.FailFast("RhpNewArrayFast Bad numElements");
+        }
+
+        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
+        *result = pMt;
+        *(int*)(result + 1) = numElements;
+        return result;
+    }
+
+    [RuntimeExport("RhpNewPtrArrayFast")]
+    internal static void* RhpNewPtrArrayFast(MethodTable* pMt, int numElements)
+    {
+        if (numElements < 0)
+        {
+            Environment.FailFast("RhpNewPtrArrayFast Bad numElements");
         }
 
         MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
@@ -118,6 +132,13 @@ internal unsafe class StartupCodeHelpers
         MethodTable** result;
 
 #if UEFI || DEBUG
+
+        if (Environment.EfiSysTable == null)
+        {
+            ThrowHelpers.ThrowNullReferenceException();
+            return null;
+        }
+
         EfiStatus status =
             Environment.EfiSysTable->BootServices->AllocatePool(EfiMemoryType.EfiLoaderData, size, (void**)&result);
         if (status != EfiStatus.Success)

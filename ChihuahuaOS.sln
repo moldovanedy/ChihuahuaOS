@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.Bootloader", "ChihuahuaOS.Bootloader\ChihuahuaOS.Bootloader.csproj", "{F67A7C2B-CD0C-463B-BD40-E91A64568504}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.CompilerEssentials", "ChihuahuaOS.CompilerEssentials\ChihuahuaOS.CompilerEssentials.csproj", "{38A64220-2E9C-47C7-B0C1-30326E60FF17}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.CoreLib", "ChihuahuaOS.CoreLib\ChihuahuaOS.CoreLib.csproj", "{38A64220-2E9C-47C7-B0C1-30326E60FF17}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.EfiApi", "ChihuahuaOS.EfiApi\ChihuahuaOS.EfiApi.csproj", "{26229BE9-4641-4CAE-BE98-3D439B205ACD}"
 EndProject

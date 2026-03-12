@@ -1,5 +1,6 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using Extra;
 using Extra.Runtime;
 using Internal.Runtime.CompilerHelpers;
 
@@ -10,7 +11,7 @@ public sealed class String : IDisposable
     //internal ordering! DO NOT modify; also that's how it's supposed to have the auto-property
 #pragma warning disable CS0649 // Field is never assigned to
     //intrinsic, no need to assign
-    private readonly int _stringLength;
+    private int _stringLength;
 #pragma warning restore CS0649 // Field  never assigned to
 
     private char _firstChar;
@@ -230,113 +231,108 @@ public sealed class String : IDisposable
 
     public static string Concat(string? str0, string? str1)
     {
-        str0 ??= Empty;
-        str1 ??= Empty;
-
-        if (IsNullOrEmpty(str0))
-        {
-            return IsNullOrEmpty(str1) ? Empty : str1;
-        }
-
-        if (IsNullOrEmpty(str1))
-        {
-            return str0;
-        }
-
-        int totalLength = str0.Length + str1.Length;
-
-        //can't overflow to a positive number, so just check < 0
-        if (totalLength < 0)
-        {
-            ThrowHelpers.ThrowOverflowException();
-        }
-
-        string result = FastNewString(totalLength);
-        CopyStringContent(result, 0, str0);
-        CopyStringContent(result, str0.Length, str1);
-
-        return result;
+        string?[] args = [str0, str1];
+        string finalString = Concat(args);
+        args.Dispose();
+        return finalString;
     }
 
     public static string Concat(string? str0, string? str1, string? str2)
     {
-        str0 ??= Empty;
-        str1 ??= Empty;
-        str2 ??= Empty;
-
-        if (IsNullOrEmpty(str0))
-        {
-            return Concat(str1, str2);
-        }
-
-        if (IsNullOrEmpty(str1))
-        {
-            return Concat(str0, str2);
-        }
-
-        if (IsNullOrEmpty(str2))
-        {
-            return Concat(str0, str1);
-        }
-
-        //it can overflow to a positive number, so we accumulate the total length as a long.
-        long totalLength = (long)str0.Length + str1.Length + str2.Length;
-
-        if (totalLength > int.MaxValue)
-        {
-            ThrowHelpers.ThrowOverflowException();
-        }
-
-        string result = FastNewString((int)totalLength);
-        CopyStringContent(result, 0, str0);
-        CopyStringContent(result, str0.Length, str1);
-        CopyStringContent(result, str0.Length + str1.Length, str2);
-
-        return result;
+        string?[] args = [str0, str1, str2];
+        string finalString = Concat(args);
+        args.Dispose();
+        return finalString;
     }
 
     public static string Concat(string? str0, string? str1, string? str2, string? str3)
     {
-        str0 ??= Empty;
-        str1 ??= Empty;
-        str2 ??= Empty;
-        str3 ??= Empty;
+        string?[] args = [str0, str1, str2, str3];
+        string finalString = Concat(args);
+        args.Dispose();
+        return finalString;
+    }
 
-        if (IsNullOrEmpty(str0))
+    public static string Concat(object? obj0, object? obj1)
+    {
+        object?[] args = [obj0, obj1];
+        string finalString = Concat(args);
+        args.Dispose();
+        return finalString;
+    }
+
+    public static string Concat(object? obj0, object? obj1, object? obj2)
+    {
+        object?[] args = [obj0, obj1, obj2];
+        string finalString = Concat(args);
+        args.Dispose();
+        return finalString;
+    }
+
+    public static string Concat(object? obj0, object? obj1, object? obj2, object? obj3)
+    {
+        object?[] args = [obj0, obj1, obj2, obj3];
+        string finalString = Concat(args);
+        args.Dispose();
+        return finalString;
+    }
+
+    public static string Concat(params object?[] args)
+    {
+        if (args.Length <= 1)
         {
-            return Concat(str1, str2, str3);
+            return args.Length == 0 ? Empty : args[0]?.ToString() ?? Empty;
         }
 
-        if (IsNullOrEmpty(str1))
+        using SafeArray<string> stringRepresentations = new(args.Length);
+        for (int i = 0; i < args.Length; i++)
         {
-            return Concat(str0, str2, str3);
+            stringRepresentations[i] = args[i]?.ToString() ?? Empty;
         }
 
-        if (IsNullOrEmpty(str2))
+        return Concat(stringRepresentations);
+    }
+
+    public static string Concat(params string?[] args)
+    {
+        if (args.Length <= 1)
         {
-            return Concat(str0, str1, str3);
+            return args.Length == 0 ? Empty : args[0] ?? Empty;
         }
 
-        if (IsNullOrEmpty(str3))
+        int totalLength = 0;
+        for (int i = 0; i < args.Length; i++)
         {
-            return Concat(str0, str1, str2);
+            totalLength += args[i]?.Length ?? 0;
+
+            //positive overflow
+            if (totalLength < 0)
+            {
+                ThrowHelpers.ThrowOverflowException();
+            }
         }
 
-        //it can overflow to a positive number, so we accumulate the total length as a long.
-        long totalLength = (long)str0.Length + str1.Length + str2.Length + str3.Length;
-
-        if (totalLength > int.MaxValue)
+        if (totalLength == 0)
         {
-            ThrowHelpers.ThrowOverflowException();
+            return Empty;
         }
 
-        string result = FastNewString((int)totalLength);
-        CopyStringContent(result, 0, str0);
-        CopyStringContent(result, str0.Length, str1);
-        CopyStringContent(result, str0.Length + str1.Length, str2);
-        CopyStringContent(result, str0.Length + str1.Length + str2.Length, str3);
+        string bigString = FastNewString(totalLength);
+        int pos = 0;
 
-        return result;
+        for (int i = 0; i < args.Length; i++)
+        {
+            string? s = args[i];
+            if (s == null)
+            {
+                continue;
+            }
+
+            CopyStringContent(bigString, pos, s);
+            pos += s.Length;
+        }
+
+        return bigString;
     }
 
     [Intrinsic] // Unrolled and vectorized for half-constant input
@@ -390,7 +386,7 @@ public sealed class String : IDisposable
 
     private static void CopyStringContent(string dest, int destPos, string src)
     {
-        if (src.Length <= dest.Length - destPos)
+        if (src.Length > dest.Length - destPos)
         {
             ThrowHelpers.ThrowArgumentException();
         }
@@ -401,7 +397,7 @@ public sealed class String : IDisposable
             (uint)src.Length);
 
         //this is safe, as we always allocate one more char in string
-        Unsafe.Add(ref dest._firstChar, src.Length) = '\0';
+        Unsafe.Add(ref dest._firstChar, destPos + src.Length) = '\0';
     }
 
     private string InternalSubString(int startIndex, int length)
@@ -450,7 +446,9 @@ public sealed class String : IDisposable
     private static unsafe string FastNewString(int numChars)
     {
         //always add a char for null termination
-        return NewString("".m_pMethodTable, numChars + 1);
+        string str = NewString("".m_pMethodTable, numChars + 1);
+        str._stringLength--;
+        return str;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport("*", "RhpNewArray")]

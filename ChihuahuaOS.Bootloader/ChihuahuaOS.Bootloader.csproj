@@ -20,7 +20,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../ChihuahuaOS.CompilerEssentials/ChihuahuaOS.CompilerEssentials.csproj" />
+        <ProjectReference Include="..\ChihuahuaOS.CoreLib\ChihuahuaOS.CoreLib.csproj" />
         <ProjectReference Include="../ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
     </ItemGroup>
 

@@ -9,7 +9,7 @@ namespace System;
 
 public static unsafe class Environment
 {
-    internal static EfiSystemTable* EfiSysTable = null;
+    public static EfiSystemTable* EfiSysTable { get; private set; } = null;
 
     [DoesNotReturn]
     public static void FailFast(string message)

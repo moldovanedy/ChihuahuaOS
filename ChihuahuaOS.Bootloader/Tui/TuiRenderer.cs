@@ -11,19 +11,22 @@ internal static class TuiRenderer
         Right
     }
 
-    internal const int LOWER_TABLE_HEIGHT = 4;
-    internal const int TOP_TABLE_START = 3;
+    public const string CHIHUAHUA_OS = "ChihuahuaOS";
+    public const int LOWER_TABLE_HEIGHT = 4;
+    public const int TOP_TABLE_START = 3;
 
     /// <summary>
-    /// True if it's the main screen, false if it's the settings screen, null if this is the initial boot.
+    /// True if it's the main screen, false if it's the settings screen or it's started just now.
     /// </summary>
-    private static bool? _isMainScreen;
+    private static bool _isMainScreen;
+
+    private static bool _hasScreenTransitionNow = true;
+    private static OsVersion _osVersion;
 
     public static void DrawPersistentElements()
     {
         DrawRect(0, 0, Console.BufferWidth, 2, ConsoleColor.DarkGreen);
 
-        const string CHIHUAHUA_OS = "ChihuahuaOS";
         int col = AlignText(CHIHUAHUA_OS, 0, Console.BufferWidth, TextAlignment.Center);
 
         Console.BackgroundColor = ConsoleColor.DarkGreen;
@@ -47,13 +50,46 @@ internal static class TuiRenderer
 
     public static void RedrawMainContent(ConsoleKeyInfo newKeyStroke)
     {
-        if (_isMainScreen == null)
+        if (_hasScreenTransitionNow)
         {
-            MainScreen.OnEnterScreen();
-            _isMainScreen = true;
+            if (_isMainScreen)
+            {
+                SettingsScreen.OnEnterScreen(_osVersion);
+            }
+            else
+            {
+                MainScreen.OnEnterScreen();
+            }
+
+            _isMainScreen = !_isMainScreen;
+            _hasScreenTransitionNow = false;
         }
 
-        MainScreen.DrawMain(newKeyStroke);
+        if (_isMainScreen)
+        {
+            MainScreen.DrawMain(newKeyStroke);
+
+            OsVersion? osVersion = MainScreen.GetVersionForSettingsNavigation();
+            if (osVersion != null)
+            {
+                _hasScreenTransitionNow = true;
+                _osVersion = osVersion.Value;
+            }
+        }
+        else
+        {
+            SettingsScreen.DrawMain(newKeyStroke);
+
+            if (SettingsScreen.WantsBackNavigation())
+            {
+                _hasScreenTransitionNow = true;
+            }
+        }
+    }
+
+    public static bool WantsForcedRedraw()
+    {
+        return _isMainScreen ? MainScreen.WantsForcedRedraw() : SettingsScreen.WantsForcedRedraw();
     }
 
 

@@ -29,9 +29,21 @@ public readonly unsafe struct EfiRuntimeServices
     // Variable services
     //
 
-    private readonly IntPtr _GetVariable;
-    private readonly IntPtr _GetNextVariableName;
-    private readonly IntPtr _SetVariable;
+    /// <summary>
+    /// The first parameter is the variable name, the second is a reference to the EFI GUID of the vendor (can also
+    /// be "global variable"), the third is an out pointer of the attributes, the fourth is an in/out indicating
+    /// the size of the data buffer at input and the actual data size at output (might need to recall with a larger
+    /// buffer if an error is returned), while the fifth is the actual data buffer.
+    /// </summary>
+    public readonly delegate* unmanaged<char*, EfiGuid*, EfiVariableAttributes*, ulong*, void*, EfiStatus> GetVariable;
+
+    public readonly delegate* unmanaged<ulong*, char*, EfiGuid*, EfiStatus> GetNextVariableName;
+
+    /// <summary>
+    /// The same as with <see cref="GetVariable"/>, but with the following differences: the attributes are a direct
+    /// value, not a pointer, and the size of the buffer is in-only.
+    /// </summary>
+    public readonly delegate* unmanaged<char*, EfiGuid*, EfiVariableAttributes, ulong, void*, EfiStatus> SetVariable;
 
     //
     // Misc

@@ -39,4 +39,14 @@ public struct Nullable<T> where T : struct
     {
         return value!.Value;
     }
+
+    public readonly T GetValueOrDefault()
+    {
+        return _hasValue ? _value : default;
+    }
+
+    public readonly T GetValueOrDefault(T defaultValue)
+    {
+        return _hasValue ? _value : defaultValue;
+    }
 }

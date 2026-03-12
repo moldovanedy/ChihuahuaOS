@@ -3,7 +3,7 @@
     "path": "..\\ChihuahuaOS.sln",
     "projects": [
       "ChihuahuaOS.Bootloader\\ChihuahuaOS.Bootloader.csproj",
-      "ChihuahuaOS.CompilerEssentials\\ChihuahuaOS.CompilerEssentials.csproj",
+      "ChihuahuaOS.CoreLib\\ChihuahuaOS.CoreLib.csproj",
       "ChihuahuaOS.EfiApi\\ChihuahuaOS.EfiApi.csproj"
     ]
   }
