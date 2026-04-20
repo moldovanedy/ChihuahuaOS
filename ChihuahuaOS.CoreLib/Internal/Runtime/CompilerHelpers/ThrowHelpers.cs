@@ -53,4 +53,14 @@ internal static class ThrowHelpers
     {
         Environment.FailFast("Not implemented exception");
     }
+
+    public static void ThrowInvalidProgramException()
+    {
+        Environment.FailFast("Invalid program exception");
+    }
+
+    public static void ThrowInvalidProgramExceptionWithArgument()
+    {
+        Environment.FailFast("Invalid program exception with argument");
+    }
 }

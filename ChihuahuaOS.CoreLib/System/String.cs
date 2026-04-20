@@ -1,7 +1,6 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using Extra;
-using Extra.Runtime;
+using ChihuahuaOS.CoreLib.Extra.Runtime;
 using Internal.Runtime.CompilerHelpers;
 
 namespace System;
@@ -11,6 +10,7 @@ public sealed class String : IDisposable
     //internal ordering! DO NOT modify; also that's how it's supposed to have the auto-property
 #pragma warning disable CS0649 // Field is never assigned to
     //intrinsic, no need to assign
+    //the MSB (sign bit) is 1 for dynamically allocated string, 0 for constant strings
     private int _stringLength;
 #pragma warning restore CS0649 // Field  never assigned to
 
@@ -18,8 +18,7 @@ public sealed class String : IDisposable
 
     #region Properties
 
-    // ReSharper disable once ConvertToAutoProperty
-    public int Length => _stringLength;
+    public int Length => (int)((uint)_stringLength & ~(1 << 31));
 
 #pragma warning disable CS8618 // Field must contain a non-null value
     // ReSharper disable once UnassignedReadonlyField
@@ -219,6 +218,20 @@ public sealed class String : IDisposable
         return InternalSubString(startIndex, length);
     }
 
+    /// <summary>
+    /// Returns the underlying char pointer. Is unsafe because it only temporarily fixes the memory, so any
+    /// modification of the string might invalidate the pointer. This should only be used on const strings
+    /// (or literals).
+    /// </summary>
+    /// <returns></returns>
+    public unsafe char* ToCharPtrUnsafe()
+    {
+        fixed (char* ptr = this)
+        {
+            return ptr;
+        }
+    }
+
     public override string ToString()
     {
         return this;
@@ -284,13 +297,19 @@ public sealed class String : IDisposable
             return args.Length == 0 ? Empty : args[0]?.ToString() ?? Empty;
         }
 
-        using SafeArray<string> stringRepresentations = new(args.Length);
+        string[] stringRepresentations = new string[args.Length];
         for (int i = 0; i < args.Length; i++)
         {
             stringRepresentations[i] = args[i]?.ToString() ?? Empty;
         }
 
-        return Concat(stringRepresentations);
+        string result = Concat(stringRepresentations);
+        for (int i = 0; i < args.Length; i++)
+        {
+            stringRepresentations[i].Dispose();
+        }
+
+        return result;
     }
 
     public static string Concat(params string?[] args)
@@ -379,7 +398,10 @@ public sealed class String : IDisposable
 
     public void Dispose()
     {
-        MemUtils.FreeMemory(this);
+        if ((_stringLength & (1 << 31)) != 0)
+        {
+            MemUtils.FreeMemory(this);
+        }
     }
 
     #endregion
@@ -446,7 +468,9 @@ public sealed class String : IDisposable
     private static unsafe string FastNewString(int numChars)
     {
         //always add a char for null termination
-        string str = NewString("".m_pMethodTable, numChars + 1);
+        string str = NewString("".m_pEEType, numChars + 1);
+        //this indicates that the string is dynamically allocated and can be disposed of
+        str._stringLength |= 1 << 31;
         str._stringLength--;
         return str;
 

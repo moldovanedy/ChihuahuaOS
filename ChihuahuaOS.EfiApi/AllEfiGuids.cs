@@ -3,5 +3,14 @@ namespace ChihuahuaOS.EfiApi;
 public static class AllEfiGuids
 {
     public static EfiGuid EfiGlobalVariable { get; } = new(
-        0x8b_e4_df_61_93_cA_11_d2, 0xaa_0d_00_e0_98_03_2b_8c);
+        0x8BE4DF61,
+        0x93CA,
+        0x11d2,
+        [0xAA, 0x0D, 0x00, 0xE0, 0x98, 0x03, 0x2B, 0x8C]);
+
+    public static EfiGuid EfiGop { get; } = new(
+        0x9042a9de,
+        0x23dc,
+        0x4a38,
+        [0x96, 0xfb, 0x7a, 0xde, 0xd0, 0x80, 0x51, 0x6a]);
 }

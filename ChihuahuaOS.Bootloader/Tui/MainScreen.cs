@@ -244,7 +244,7 @@ internal static class MainScreen
             case 2:
             {
                 const string OPTION_DESC_3_SUPPORTED =
-                    "Reboot the system and enter into the device's firmware settings (not supported on all devices).";
+                    "Reboot the system and enter into the device's firmware settings.";
                 const string OPTION_DESC_3_UNSUPPORTED =
                     "Reboot the system and enter into the device's firmware settings (might not work on this device, " +
                     "so it might reboot in this same screen).";
@@ -312,9 +312,9 @@ internal static class MainScreen
             ConsoleColor.Black);
 
         Console.CursorLeft = 2;
-        Console.WriteLine("\u2191 \u2193  [Up/down arrow] Navigate options");
+        Console.WriteLine("[Up/down arrow] Navigate options");
         Console.CursorLeft = 2;
-        Console.WriteLine("\u23ce  [Enter] Select option");
+        Console.WriteLine("[Enter] Select option");
     }
 
     private static void DrawTitle()

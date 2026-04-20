@@ -96,10 +96,10 @@ internal unsafe class StartupCodeHelpers
     }
 
     [RuntimeExport("RhpStelemRef")]
-    public static void StelemRef(Array array, nint index, object? obj)
+    internal static void StelemRef(Array array, nint index, object? obj)
     {
         ref object element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-        MethodTable* elementType = array.m_pMethodTable->_relatedType;
+        MethodTable* elementType = array.m_pEEType->_relatedType;
 
         if (obj == null)
         {
@@ -107,7 +107,7 @@ internal unsafe class StartupCodeHelpers
             return;
         }
 
-        if (elementType != obj.m_pMethodTable)
+        if (elementType != obj.m_pEEType)
         {
             Environment.FailFast("Assertion failed"); /* covariance */
         }
@@ -116,13 +116,13 @@ internal unsafe class StartupCodeHelpers
     }
 
     [RuntimeExport("RhpCheckedAssignRef")]
-    public static void RhpCheckedAssignRef(void** dst, void* r)
+    internal static void RhpCheckedAssignRef(void** dst, void* r)
     {
         *dst = r;
     }
 
     [RuntimeExport("RhpAssignRef")]
-    public static void RhpAssignRef(void** dst, void* r)
+    internal static void RhpAssignRef(void** dst, void* r)
     {
         *dst = r;
     }

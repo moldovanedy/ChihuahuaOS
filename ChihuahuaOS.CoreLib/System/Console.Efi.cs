@@ -231,7 +231,16 @@ public static unsafe partial class Console
         }
         else
         {
-            key = (ConsoleKey)unicodeChar;
+            //if lowercase, subtract the ASCII difference between lowercase and uppercase so it represents the
+            // key correctly
+            if (unicodeChar >= 'a' && unicodeChar <= 'z')
+            {
+                key = (ConsoleKey)(unicodeChar - ('a' - 'A'));
+            }
+            else
+            {
+                key = (ConsoleKey)unicodeChar;
+            }
         }
 
         return new ConsoleKeyInfo(input.UnicodeChar, key, false, false, false);

@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace System.Runtime.CompilerServices;
 
 public class RuntimeHelpers
@@ -8,21 +6,9 @@ public class RuntimeHelpers
 
     internal static unsafe MethodTable* GetMethodTable(object obj)
     {
-        return obj.m_pMethodTable;
+        return obj.m_pEEType;
     }
-}
 
-[StructLayout(LayoutKind.Sequential)]
-internal class RawArrayData
-{
-    public uint Length;
-
-#if X64 || ARM64
-    public uint Padding;
-#elif X86 || ARM
-        // No padding on 32bit
-#else
-#endif
-
-    public byte Data;
+    [Intrinsic]
+    public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
 }

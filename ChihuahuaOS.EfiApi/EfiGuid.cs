@@ -3,14 +3,22 @@ using System.Runtime.InteropServices;
 namespace ChihuahuaOS.EfiApi;
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly struct EfiGuid
+public unsafe struct EfiGuid
 {
-    public readonly ulong Low;
-    public readonly ulong High;
+    public readonly uint TimeLow;
+    public readonly ushort TimeMid;
+    public readonly ushort TimeHighAndVersion;
+    public fixed byte ClockSeqAndNode[8];
 
-    public EfiGuid(ulong low, ulong high)
+    public EfiGuid(uint timeLow, ushort timeMid, ushort timeHighAndVersion, byte[] clockSeqAndNode)
     {
-        Low = low;
-        High = high;
+        TimeLow = timeLow;
+        TimeMid = timeMid;
+        TimeHighAndVersion = timeHighAndVersion;
+
+        for (int i = 0; i < 8; i++)
+        {
+            ClockSeqAndNode[i] = clockSeqAndNode[i];
+        }
     }
 }

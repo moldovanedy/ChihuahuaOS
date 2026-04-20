@@ -2,12 +2,14 @@ using System.Runtime;
 
 namespace System;
 
-public partial class Object
+public unsafe class Object
 {
+    internal MethodTable* MethodTable => m_pEEType;
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     // The layout of object is a contract with the compiler.
     // ReSharper disable once InconsistentNaming
-    internal unsafe MethodTable* m_pMethodTable;
+    internal MethodTable* m_pEEType;
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
     // Allow an object to free resources before the GC reclaims the object.

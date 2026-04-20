@@ -51,13 +51,13 @@ public readonly ref struct ReadOnlySpan<T>
             this = default;
             return; // returns default
         }
-#if X64 || ARM64
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
-                Environment.FailFast(null);
-#elif X86 || ARM
-            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
-                Environment.FailFast(null);
-#endif
+
+// #if X64 || ARM64
+        if ((ulong)(uint)start + (uint)length > (uint)array.Length)
+        {
+            Environment.FailFast("ReadOnlySpan: given indices are outside the bounds of the array");
+        }
+// #endif
 
         _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start);
         _length = length;

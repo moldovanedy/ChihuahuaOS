@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Extra.Runtime;
+using ChihuahuaOS.CoreLib.Extra.Runtime;
 
 namespace System;
 
@@ -14,7 +14,7 @@ public abstract class Array : IDisposable
     // CS0169: The field 'Array._numComponents' is never used
 #pragma warning disable 0169
     // This field should be the first field in Array as the runtime/compilers depend on it
-    private int _numComponents;
+    private readonly int _numComponents;
 #pragma warning restore
 
     public int Length => (int)Unsafe.As<RawArrayData>(this).Length;

@@ -99,7 +99,13 @@ public readonly unsafe struct EfiBootServices
     //
     private readonly IntPtr ProtocolsPerHandle;
     private readonly IntPtr LocateHandleBuffer;
-    private readonly IntPtr LocateProtocol;
+
+    /// <summary>
+    /// The first param is a pointer to the protocol's GUID, the second is an optional registration data pointer,
+    /// and the third is the out pointer of the protocol.
+    /// </summary>
+    public readonly delegate* unmanaged<EfiGuid*, void*, void**, EfiStatus> LocateProtocol;
+
     private readonly IntPtr InstallMultipleProtocolInterfaces;
     private readonly IntPtr UninstallMultipleProtocolInterfaces;
 
