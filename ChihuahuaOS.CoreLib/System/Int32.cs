@@ -4,11 +4,31 @@ namespace System;
 
 public struct Int32
 {
-    // ReSharper disable InconsistentNaming
-    public const int MaxValue = 0x7fffffff;
+    public const int MaxValue = 0x7F_FF_FF_FF;
 
     public const int MinValue = unchecked((int)0x80000000);
-    // ReSharper restore InconsistentNaming
+
+
+    public static bool TryParse(string s, out int result)
+    {
+        result = 0;
+
+        bool success = NumberParser.TryParseString(s, out long parsed);
+        if (!success)
+        {
+            return false;
+        }
+
+        //check for overflow or underflow
+        if (parsed > MaxValue || parsed < MinValue)
+        {
+            return false;
+        }
+
+        result = (int)parsed;
+        return true;
+    }
+
 
     public override string ToString()
     {

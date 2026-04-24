@@ -4,11 +4,31 @@ namespace System;
 
 public struct UInt32
 {
-    // ReSharper disable InconsistentNaming
-    public const uint MaxValue = 0xffffffff;
+    public const uint MaxValue = 0xFF_FF_FF_FF;
 
     public const uint MinValue = 0U;
-    // ReSharper restore InconsistentNaming
+
+
+    public static bool TryParse(string s, out uint result)
+    {
+        result = 0;
+
+        bool success = NumberParser.TryParseString(s, out ulong parsed);
+        if (!success)
+        {
+            return false;
+        }
+
+        //check for overflow
+        if (parsed > MaxValue)
+        {
+            return false;
+        }
+
+        result = (uint)parsed;
+        return true;
+    }
+
 
     public override string ToString()
     {

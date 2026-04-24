@@ -22,14 +22,13 @@ public struct Boolean
 
     public static bool TryParse(string s, out bool result)
     {
-        //TODO: also add ToLower and ToUpper on string
-        if (s == TrueString || s == "true")
+        if (s.ToLowerInvariant() == "true")
         {
             result = true;
             return true;
         }
 
-        if (s == FalseString || s == "false")
+        if (s.ToLowerInvariant() == "false")
         {
             result = false;
             return true;

@@ -1,4 +1,5 @@
 using System;
+using ChihuahuaOS.CoreLib.Extra;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.RuntimeServices;
 
@@ -6,22 +7,30 @@ namespace ChihuahuaOS.Bootloader.Tui;
 
 internal static class MainScreen
 {
+    private static int _numOptions;
+    private static StaticRef<OsVersion[]> _availableOsVersions;
+
     private static int _currentOption;
     private static bool _wantsBootAbort;
     private static bool _supportsBootToFw;
 
-    private static OsVersion? _osVersion;
+    private static OsVersion? _settingsOsVersion;
 
     private const ulong EFI_OS_INDICATIONS_BOOT_TO_FW_UI = 0x01;
 
     public static void OnEnterScreen()
     {
         //TODO: actually check and list all OS versions
+        _numOptions = 4;
+        _availableOsVersions.GetValue()?.Dispose();
+        OsVersion[] osVersions = [new(0, 1, 0)];
+        _availableOsVersions.SetValue(osVersions);
+
         CheckSupportForBootToFw();
         DrawTitle();
 
         //reset
-        _osVersion = null;
+        _settingsOsVersion = null;
         _wantsBootAbort = false;
 
         //clear the main area
@@ -33,9 +42,15 @@ internal static class MainScreen
             Console.BufferHeight - TuiRenderer.TOP_TABLE_START - TuiRenderer.LOWER_TABLE_HEIGHT - 3,
             ConsoleColor.Black);
 
-        RedrawOption(0, _currentOption == 0);
-        RedrawOption(1, _currentOption == 1);
-        RedrawOption(2, _currentOption == 2);
+        for (int i = 0; i < osVersions.Length; i++)
+        {
+            int idx = i * 2;
+            RedrawOption(idx, _currentOption == idx);
+            RedrawOption(idx + 1, _currentOption == idx + 1);
+        }
+
+        RedrawOption(_numOptions - 2, _currentOption == _numOptions - 2);
+        RedrawOption(_numOptions - 1, _currentOption == _numOptions - 1);
         RedrawDescription(_currentOption);
 
         DrawBottomInstructions();
@@ -50,70 +65,39 @@ internal static class MainScreen
                 return;
             case ConsoleKey.Enter:
             {
-                switch (_currentOption)
+                if (_currentOption < _numOptions - 2)
                 {
-                    case 1:
-                        _osVersion = new OsVersion(0, 1, 0);
-                        break;
-                    case 2:
+                    if (_currentOption % 2 == 0)
                     {
-                        bool success = TryBootToFw();
-                        if (!success)
-                        {
-                            Console.CursorTop = 6;
-                            Console.CursorLeft = 1;
+                        //TODO: boot the OS   
+                    }
+                    else if (_availableOsVersions.HasValue())
+                    {
+                        _settingsOsVersion = _availableOsVersions.GetValue()![_currentOption / 2];
+                    }
+                }
+                else if (_currentOption == _numOptions - 2)
+                {
+                    //TODO: add boot manager settings
+                }
+                else if (_currentOption == _numOptions - 1)
+                {
+                    bool success = TryBootToFw();
+                    if (!success)
+                    {
+                        Console.CursorTop = 6;
+                        Console.CursorLeft = 1;
 
-                            ConsoleColor previousColor = Console.ForegroundColor;
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Failed to reboot to firmware UI!");
-                            Console.ForegroundColor = previousColor;
-                        }
-
-                        break;
+                        ConsoleColor previousColor = Console.ForegroundColor;
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Failed to reboot to firmware UI!");
+                        Console.ForegroundColor = previousColor;
                     }
                 }
 
                 break;
             }
         }
-
-        // unsafe
-        // {
-        //     ulong maxVarLength = 600;
-        //     char* lastVarName = stackalloc char[300];
-        //     lastVarName[0] = '\0';
-        //
-        //     EfiGuid lastGuid = new();
-        //     Console.CursorTop = 7;
-        //
-        //     while (true)
-        //     {
-        //         maxVarLength = 600;
-        //         EfiStatus status = Environment.EfiSysTable->RuntimeServices->GetNextVariableName(
-        //             &maxVarLength,
-        //             lastVarName,
-        //             &lastGuid);
-        //
-        //         if (status == EfiStatus.NotFound)
-        //         {
-        //             Console.CursorTop = 6;
-        //             Console.CursorLeft = 1;
-        //             Console.WriteLine("ALL");
-        //             break;
-        //         }
-        //
-        //         if (status != EfiStatus.Success)
-        //         {
-        //             Console.CursorTop = 6;
-        //             Console.CursorLeft = 1;
-        //             Console.WriteLine(((uint)status).ToString());
-        //             break;
-        //         }
-        //
-        //         Console.CursorLeft = 1;
-        //         Console.WriteRaw(lastVarName);
-        //     }
-        // }
 
         int previousOption = _currentOption;
 
@@ -122,7 +106,7 @@ internal static class MainScreen
         {
             _currentOption--;
         }
-        else if (newKeyStroke.Key == ConsoleKey.DownArrow && _currentOption < 2)
+        else if (newKeyStroke.Key == ConsoleKey.DownArrow && _currentOption < _numOptions)
         {
             _currentOption++;
         }
@@ -139,7 +123,7 @@ internal static class MainScreen
 
     public static bool WantsForcedRedraw()
     {
-        return _osVersion != null;
+        return _settingsOsVersion != null;
     }
 
     /// <summary>
@@ -150,7 +134,7 @@ internal static class MainScreen
     /// </returns>
     public static OsVersion? GetVersionForSettingsNavigation()
     {
-        return _osVersion;
+        return _settingsOsVersion;
     }
 
     public static bool WantsBootAbort()
@@ -161,6 +145,12 @@ internal static class MainScreen
 
     private static void RedrawOption(int index, bool isHighlighted)
     {
+        if (!_availableOsVersions.HasValue())
+        {
+            return;
+        }
+
+        OsVersion[] osVersions = _availableOsVersions.GetValue()!;
         Console.CursorLeft = 1;
         Console.CursorTop = TuiRenderer.TOP_TABLE_START + index;
         int charsDrawn = 0;
@@ -168,7 +158,7 @@ internal static class MainScreen
         if (isHighlighted)
         {
             Console.BackgroundColor = ConsoleColor.DarkCyan;
-            Console.ForegroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.White;
             Console.Write(" ->");
             charsDrawn += 3;
         }
@@ -178,29 +168,33 @@ internal static class MainScreen
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        switch (index)
+        if (index < _numOptions - 2)
         {
-            case 0:
+            if (index % 2 == 0)
             {
-                const string OPTION_1 = " Start ChihuahuaOS v.0.1.0";
-                Console.Write(OPTION_1);
-                charsDrawn += OPTION_1.Length;
-                break;
+                using string optionText = " Start ChihuahuaOS v." + osVersions[index / 2];
+                Console.Write(optionText);
+                charsDrawn += optionText.Length;
             }
-            case 1:
+            else
             {
-                const string OPTION_2 = " Enter OS boot settings (for v.0.1.0)";
-                Console.Write(OPTION_2);
-                charsDrawn += OPTION_2.Length;
-                break;
+                using string optionText =
+                    " Enter OS boot settings (for v." + osVersions[index / 2] + ")";
+                Console.Write(optionText);
+                charsDrawn += optionText.Length;
             }
-            case 2:
-            {
-                const string OPTION_3 = " Enter UEFI firmware settings";
-                Console.Write(OPTION_3);
-                charsDrawn += OPTION_3.Length;
-                break;
-            }
+        }
+        else if (index == _numOptions - 2)
+        {
+            const string OPTION_N_2 = " Enter Chihuahua boot manager settings";
+            Console.Write(OPTION_N_2);
+            charsDrawn += OPTION_N_2.Length;
+        }
+        else if (index == _numOptions - 1)
+        {
+            const string OPTION_N_1 = " Enter UEFI firmware settings";
+            Console.Write(OPTION_N_1);
+            charsDrawn += OPTION_N_1.Length;
         }
 
         int whiteSpaceLength = Console.BufferWidth - 2 - charsDrawn;
@@ -215,6 +209,13 @@ internal static class MainScreen
 
     private static void RedrawDescription(int index)
     {
+        if (!_availableOsVersions.HasValue())
+        {
+            return;
+        }
+
+        OsVersion[] osVersions = _availableOsVersions.GetValue()!;
+
         //we extract the lower table height, then the 2 borders, then 3 rows for this description
         int startRow = Console.BufferHeight - 1 - TuiRenderer.LOWER_TABLE_HEIGHT - 2 - 3;
         CleanupDescription(startRow);
@@ -225,33 +226,38 @@ internal static class MainScreen
         Console.CursorTop = startRow;
 
         Console.Write(" INFO: ");
-        switch (index)
+        if (index < _numOptions - 2)
         {
-            case 0:
+            if (index % 2 == 0)
             {
-                const string OPTION_DESC_1 = "Starts Chihuahua OS (version 0.1.0).";
-                Console.Write(OPTION_DESC_1);
-                break;
+                using string optionDescText =
+                    "Starts Chihuahua OS (version " + osVersions[index / 2] + ").";
+                Console.Write(optionDescText);
             }
-            case 1:
+            else
             {
-                const string OPTION_DESC_2 =
-                    "Configure the boot settings for ChihuahuaOS (version 0.1.0), settings that might impact the " +
-                    "mode the OS boots.";
-                Console.Write(OPTION_DESC_2);
-                break;
+                using string optionDescText =
+                    "Configure the boot settings for ChihuahuaOS (version "
+                    + osVersions[index / 2]
+                    + "), settings that might impact the mode the OS boots.";
+                Console.Write(optionDescText);
             }
-            case 2:
-            {
-                const string OPTION_DESC_3_SUPPORTED =
-                    "Reboot the system and enter into the device's firmware settings.";
-                const string OPTION_DESC_3_UNSUPPORTED =
-                    "Reboot the system and enter into the device's firmware settings (might not work on this device, " +
-                    "so it might reboot in this same screen).";
+        }
+        else if (index == _numOptions - 2)
+        {
+            const string OPTION_DESC_N_2 =
+                "Configure the settings for this graphical boot manager settings.";
+            Console.Write(OPTION_DESC_N_2);
+        }
+        else if (index == _numOptions - 1)
+        {
+            const string OPTION_DESC_N_1_SUPPORTED =
+                "Reboot the system and enter into the device's firmware settings.";
+            const string OPTION_DESC_N_1_UNSUPPORTED =
+                "Reboot the system and enter into the device's firmware settings (might not work on this device, " +
+                "so it might reboot in this same screen).";
 
-                Console.Write(_supportsBootToFw ? OPTION_DESC_3_SUPPORTED : OPTION_DESC_3_UNSUPPORTED);
-                break;
-            }
+            Console.Write(_supportsBootToFw ? OPTION_DESC_N_1_SUPPORTED : OPTION_DESC_N_1_UNSUPPORTED);
         }
     }
 
@@ -416,7 +422,7 @@ internal static class MainScreen
                 return true;
             }
 
-            //otherwise, if we already know that the device supports this and we couldn't set the variable, we
+            //otherwise, if we already know that the device supports this, and we couldn't set the variable, we
             // return false (no action)
             if (_supportsBootToFw)
             {

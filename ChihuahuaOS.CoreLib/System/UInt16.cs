@@ -4,11 +4,31 @@ namespace System;
 
 public struct UInt16
 {
-    // ReSharper disable InconsistentNaming
     public const ushort MaxValue = 0xFFFF;
 
     public const ushort MinValue = 0;
-    // ReSharper restore InconsistentNaming
+
+
+    public static bool TryParse(string s, out ushort result)
+    {
+        result = 0;
+
+        bool success = NumberParser.TryParseString(s, out ulong parsed);
+        if (!success)
+        {
+            return false;
+        }
+
+        //check for overflow
+        if (parsed > MaxValue)
+        {
+            return false;
+        }
+
+        result = (ushort)parsed;
+        return true;
+    }
+
 
     public override string ToString()
     {

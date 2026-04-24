@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using ChihuahuaOS.Bootloader.SettingsManager;
 using ChihuahuaOS.Bootloader.Tui.ValueSetters;
 
 namespace ChihuahuaOS.Bootloader.Tui;
@@ -9,12 +12,14 @@ public static class SettingsScreen
 
     internal static int MainTableHeight;
     internal static int CurrentCursorPosition = 2;
+    internal static KernelSettings KernelSettings;
 
     private static bool _wantsBackNavigation;
     private static OsVersion _osVersion;
 
     private static bool _isDescriptionOverlayActive;
     private static bool _isValueSettingOverlayActive;
+    private static bool _isNotificationPopupActive;
     private static int _overlayHeight;
 
     private static int _currentScrollValue = 0;
@@ -35,17 +40,30 @@ public static class SettingsScreen
             MainTableHeight,
             ConsoleColor.Black);
 
+        LoadSettings();
         DrawTitle();
         DrawGeneralBottomInstructions();
 
-        GraphicsSettingsContainer.OnEnterScreen();
-        GraphicsSettingsContainer.Draw(0, 0, 3);
+        SubsectionRenderer.OnEnterScreen();
+        SubsectionRenderer.Draw(0, 0, 3);
     }
 
     public static void DrawMain(ConsoleKeyInfo newKeyStroke)
     {
         bool wasOverlayActive = _isDescriptionOverlayActive || _isValueSettingOverlayActive;
         int descOverlayY = wasOverlayActive ? (Console.BufferHeight - _overlayHeight) / 2 : 0;
+
+        if (_isNotificationPopupActive)
+        {
+            //TODO: when there are multiple settings, here we need to redraw the UI, not clear it
+            TuiRenderer.DrawRect(
+                1,
+                MainTableHeight + TuiRenderer.TOP_TABLE_START - 1,
+                Console.BufferWidth - 2,
+                1,
+                ConsoleColor.Black);
+            _isNotificationPopupActive = false;
+        }
 
         //if the description overlay is active and any key was pressed
         bool shouldRemoveDescription = _isDescriptionOverlayActive && newKeyStroke.Key != ConsoleKey.None;
@@ -57,9 +75,12 @@ public static class SettingsScreen
 
         if (shouldRemoveValueSetting || shouldRemoveDescription)
         {
-            if (shouldRemoveValueSetting)
+            //only set if the pressed key was Enter
+            if (shouldRemoveValueSetting && newKeyStroke.Key == ConsoleKey.Enter)
             {
                 ListValueSetter.End();
+                //TODO: only draw the things that were changed, not the entire screen
+                SubsectionRenderer.Draw(0, 0, 3);
             }
 
             int x = (Console.BufferWidth - OVERLAY_WIDTH) / 2;
@@ -83,6 +104,11 @@ public static class SettingsScreen
 
         if (wasOverlayActive)
         {
+            if (shouldRemoveValueSetting && newKeyStroke.Key == ConsoleKey.Enter)
+            {
+                SaveSettings();
+            }
+
             DrawGeneralBottomInstructions();
         }
 
@@ -105,11 +131,11 @@ public static class SettingsScreen
                 return;
             }
             case ConsoleKey.UpArrow
-                when CurrentCursorPosition > GraphicsSettingsContainer.GLOBAL_START_POS:
+                when CurrentCursorPosition > SubsectionRenderer.GLOBAL_START_POS:
                 CurrentCursorPosition--;
                 break;
             case ConsoleKey.DownArrow
-                when CurrentCursorPosition < GraphicsSettingsContainer.GLOBAL_START_POS:
+                when CurrentCursorPosition < SubsectionRenderer.GLOBAL_END_POS:
                 CurrentCursorPosition++;
                 break;
             case ConsoleKey.I:
@@ -123,7 +149,7 @@ public static class SettingsScreen
         }
 
         //TODO: only draw the things that were changed, not the entire screen
-        GraphicsSettingsContainer.Draw(0, 0, 3);
+        SubsectionRenderer.Draw(0, 0, 3);
     }
 
     public static bool WantsBackNavigation()
@@ -222,8 +248,7 @@ public static class SettingsScreen
 
     private static void DrawDescriptionOverlay()
     {
-        (string title, string[] description) =
-            GraphicsSettingsContainer.GetTitleAndDescriptionAt(CurrentCursorPosition);
+        (string title, string[] description) = SubsectionRenderer.GetTitleAndDescriptionAt(CurrentCursorPosition);
 
         int height = 4 + description.Length;
         _isDescriptionOverlayActive = true;
@@ -271,6 +296,65 @@ public static class SettingsScreen
         _overlayHeight = ListValueSetter.Init();
 
         DrawSelectionValueSetterBottomInstructions();
+    }
+
+    private static void LoadSettings()
+    {
+        using string settingsFilePath = "\\EFI\\BOOT\\ChiOS_" + _osVersion + ".CFG";
+        FileStream? fs = File.OpenRead(settingsFilePath);
+        if (fs == null)
+        {
+            using string errCodeString = ((long)File.LastOpenError & 0xffL).ToString();
+            using string errorMsg = " ERROR: File open issue (" + errCodeString + ")!";
+
+            Console.CursorLeft = 1;
+            Console.CursorTop = MainTableHeight + TuiRenderer.TOP_TABLE_START - 1;
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.DarkRed;
+            Console.Write(errorMsg);
+            _isNotificationPopupActive = true;
+            return;
+        }
+
+        List<TomlSetting> settings = TomlManager.ReadFromStream(fs, KernelSettings.NUM_SETTINGS);
+        KernelSettings = KernelSettings.FromConfigList(settings);
+        settings.Dispose();
+    }
+
+    private static void SaveSettings()
+    {
+        Console.CursorLeft = 1;
+        Console.CursorTop = MainTableHeight + TuiRenderer.TOP_TABLE_START - 1;
+        Console.ForegroundColor = ConsoleColor.White;
+
+        using string settingsFilePath = "\\EFI\\BOOT\\ChiOS_" + _osVersion + ".CFG";
+        FileStream? fs = File.Open(settingsFilePath, FileMode.OpenOrCreate, FileAccess.Write);
+        if (fs == null)
+        {
+            Console.BackgroundColor = ConsoleColor.DarkRed;
+            using string errCodeString = ((long)File.LastOpenError & 0xffL).ToString();
+            using string errorMsg = " ERROR: File open issue (" + errCodeString + ")!";
+            Console.Write(errorMsg);
+            _isNotificationPopupActive = true;
+            return;
+        }
+
+        List<TomlSetting> configList = KernelSettings.ToConfigList();
+        bool success = TomlManager.WriteToStream(fs, configList);
+
+        if (success)
+        {
+            Console.BackgroundColor = ConsoleColor.DarkGreen;
+            Console.Write(" Settings saved successfully!");
+        }
+        else
+        {
+            Console.BackgroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine(" ERROR: Failed to write settings to file");
+        }
+
+        _isNotificationPopupActive = true;
+        configList.Dispose();
     }
 
     private static void DrawGeneralBottomInstructions()

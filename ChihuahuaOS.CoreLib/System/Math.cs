@@ -6,6 +6,12 @@ namespace System;
 
 public static class Math
 {
+    public const double E = 2.7182818284590452354;
+
+    public const double PI = 3.14159265358979323846;
+
+    public const double Tau = 6.283185307179586476925;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static short Abs(short value)
     {
@@ -50,6 +56,275 @@ public static class Math
 
         return value;
     }
+
+    /// <summary>Returns the absolute value of a native signed integer.</summary>
+    /// <param name="value">A number that is greater than <see cref="IntPtr.MinValue" />, but less than or equal to <see cref="IntPtr.MaxValue" />.</param>
+    /// <returns>A native signed integer, x, such that 0 \u2264 x \u2264 <see cref="IntPtr.MaxValue" />.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static nint Abs(nint value)
+    {
+        if (value < 0)
+        {
+            value = -value;
+            if (value < 0)
+            {
+                ThrowHelpers.ThrowOverflowException();
+            }
+        }
+
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static sbyte Abs(sbyte value)
+    {
+        if (value < 0)
+        {
+            value = (sbyte)-value;
+            if (value < 0)
+            {
+                ThrowHelpers.ThrowOverflowException();
+            }
+        }
+
+        return value;
+    }
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static double Abs(double value)
+    {
+        const ulong MASK = 0x7FFFFFFFFFFFFFFF;
+        ulong raw = BitConverter.DoubleToUInt64Bits(value);
+
+        return BitConverter.UInt64BitsToDouble(raw & MASK);
+    }
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float Abs(float value)
+    {
+        const uint MASK = 0x7FFFFFFF;
+        uint raw = BitConverter.SingleToUInt32Bits(value);
+        return BitConverter.UInt32BitsToSingle(raw & MASK);
+    }
+
+    [Intrinsic]
+    public static byte Max(byte val1, byte val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static double Max(double val1, double val2)
+    {
+        // This matches the IEEE 754:2019 `maximum` function
+        //
+        // It propagates NaN inputs back to the caller and
+        // otherwise returns the greater of the inputs. It
+        // treats +0 as greater than -0 as per the specification.
+
+        // ReSharper disable once CompareOfFloatsByEqualityOperator
+        if (val1 != val2)
+        {
+            if (!double.IsNaN(val1))
+            {
+                return val2 < val1 ? val1 : val2;
+            }
+
+            return val1;
+        }
+
+        return double.IsNegative(val2) ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static short Max(short val1, short val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static int Max(int val1, int val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static long Max(long val1, long val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static nint Max(nint val1, nint val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static sbyte Max(sbyte val1, sbyte val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float Max(float val1, float val2)
+    {
+        // This matches the IEEE 754:2019 `maximum` function
+        //
+        // It propagates NaN inputs back to the caller and
+        // otherwise returns the greater of the inputs. It
+        // treats +0 as greater than -0 as per the specification.
+
+        // ReSharper disable once CompareOfFloatsByEqualityOperator
+        if (val1 != val2)
+        {
+            if (!float.IsNaN(val1))
+            {
+                return val2 < val1 ? val1 : val2;
+            }
+
+            return val1;
+        }
+
+        return float.IsNegative(val2) ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static ushort Max(ushort val1, ushort val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static uint Max(uint val1, uint val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static ulong Max(ulong val1, ulong val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static nuint Max(nuint val1, nuint val2)
+    {
+        return val1 >= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static byte Min(byte val1, byte val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static double Min(double val1, double val2)
+    {
+        // This matches the IEEE 754:2019 `minimum` function
+        //
+        // It propagates NaN inputs back to the caller and
+        // otherwise returns the lesser of the inputs. It
+        // treats +0 as greater than -0 as per the specification.
+
+        // ReSharper disable once CompareOfFloatsByEqualityOperator
+        if (val1 != val2)
+        {
+            if (!double.IsNaN(val1))
+            {
+                return val1 < val2 ? val1 : val2;
+            }
+
+            return val1;
+        }
+
+        return double.IsNegative(val1) ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static short Min(short val1, short val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static int Min(int val1, int val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static long Min(long val1, long val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static nint Min(nint val1, nint val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static sbyte Min(sbyte val1, sbyte val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float Min(float val1, float val2)
+    {
+        // This matches the IEEE 754:2019 `minimum` function
+        //
+        // It propagates NaN inputs back to the caller and
+        // otherwise returns the lesser of the inputs. It
+        // treats +0 as greater than -0 as per the specification.
+
+        // ReSharper disable once CompareOfFloatsByEqualityOperator
+        if (val1 != val2)
+        {
+            if (!float.IsNaN(val1))
+            {
+                return val1 < val2 ? val1 : val2;
+            }
+
+            return val1;
+        }
+
+        return float.IsNegative(val1) ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static ushort Min(ushort val1, ushort val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static uint Min(uint val1, uint val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static ulong Min(ulong val1, ulong val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
+    [Intrinsic]
+    public static nuint Min(nuint val1, nuint val2)
+    {
+        return val1 <= val2 ? val1 : val2;
+    }
+
 
     internal static int ConvertToInt32Checked(double value)
     {

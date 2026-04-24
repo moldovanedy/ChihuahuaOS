@@ -4,11 +4,31 @@ namespace System;
 
 public struct Byte
 {
-    // ReSharper disable InconsistentNaming
     public const byte MaxValue = 0xFF;
 
     public const byte MinValue = 0;
-    // ReSharper restore InconsistentNaming
+
+
+    public static bool TryParse(string s, out byte result)
+    {
+        result = 0;
+
+        bool success = NumberParser.TryParseString(s, out ulong parsed);
+        if (!success)
+        {
+            return false;
+        }
+
+        //check for overflow
+        if (parsed > MaxValue)
+        {
+            return false;
+        }
+
+        result = (byte)parsed;
+        return true;
+    }
+
 
     public override string ToString()
     {

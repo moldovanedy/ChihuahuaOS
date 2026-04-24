@@ -9,6 +9,11 @@ internal static class ThrowHelpers
         Environment.FailFast("Argument exception");
     }
 
+    public static void ThrowInvalidOperationException()
+    {
+        Environment.FailFast("Invalid operation exception");
+    }
+
     public static void ThrowInvalidCastException()
     {
         Environment.FailFast("Invalid cast exception");
@@ -57,6 +62,11 @@ internal static class ThrowHelpers
     public static void ThrowInvalidProgramException()
     {
         Environment.FailFast("Invalid program exception");
+    }
+
+    public static void ThrowStreamException()
+    {
+        Environment.FailFast("Stream exception");
     }
 
     public static void ThrowInvalidProgramExceptionWithArgument()

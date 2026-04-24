@@ -1,4 +1,5 @@
 using System;
+using ChihuahuaOS.CoreLib.Extra;
 
 namespace ChihuahuaOS.Bootloader.Tui.ValueSetters;
 
@@ -9,8 +10,13 @@ internal static class ListValueSetter
     /// </summary>
     private const int NUM_PADDING_ROWS = 6;
 
-    private static int _height = 15;
-    private static string[]? _values = [];
+    private const int MAX_ROWS = 10;
+
+    private static int _height;
+    private static int _currentIndex;
+    private static int _scrolledRows;
+
+    private static StaticRef<string[]> _options;
 
     /// <summary>
     /// 
@@ -18,12 +24,26 @@ internal static class ListValueSetter
     /// <returns>The number of rows occupied (height).</returns>
     public static int Init()
     {
-        const int MAX_ROWS = 10;
-
         (string title, string[] values) =
-            GraphicsSettingsContainer.GetValuesForPropertyAt(SettingsScreen.CurrentCursorPosition);
+            SubsectionRenderer.GetValuesForPropertyAt(SettingsScreen.CurrentCursorPosition);
         _height = NUM_PADDING_ROWS + (values.Length >= MAX_ROWS ? MAX_ROWS : values.Length);
-        _values = values;
+        _currentIndex = 0;
+        _scrolledRows = 0;
+        _options.SetValue(values);
+
+        string? selectedValue = SubsectionRenderer.GetValueForProperty(SettingsScreen.CurrentCursorPosition);
+        if (selectedValue != null)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (selectedValue == values[i])
+                {
+                    _currentIndex = i;
+                    _scrolledRows = Math.Max(_currentIndex - MAX_ROWS + 2, 0);
+                    break;
+                }
+            }
+        }
 
         int x = (Console.BufferWidth - SettingsScreen.OVERLAY_WIDTH) / 2;
         int y = (Console.BufferHeight - _height) / 2;
@@ -57,12 +77,76 @@ internal static class ListValueSetter
 
     public static void End()
     {
+        if (!_options.HasValue())
+        {
+            return;
+        }
+
+        string[] options = _options.GetValue()!;
+        SubsectionRenderer.SetValueForProperty(SettingsScreen.CurrentCursorPosition, options[_currentIndex]);
+
         _height = 0;
-        // _values?.Dispose();
+        for (int i = 0; i < options.Length; i++)
+        {
+            options[i].Dispose();
+        }
+
+        options.Dispose();
     }
 
     public static void Draw(ConsoleKeyInfo newKeyStroke)
     {
+        if (!_options.HasValue())
+        {
+            return;
+        }
+
+        string[] options = _options.GetValue()!;
+        bool needsRedraw = false;
+        switch (newKeyStroke.Key)
+        {
+            case ConsoleKey.DownArrow:
+            {
+                if (_currentIndex + 1 < options.Length)
+                {
+                    _currentIndex++;
+                    needsRedraw = true;
+                }
+
+                if (_currentIndex >= _scrolledRows + MAX_ROWS - 1 && _scrolledRows < options.Length - MAX_ROWS)
+                {
+                    _scrolledRows++;
+                    needsRedraw = true;
+                }
+
+                break;
+            }
+            case ConsoleKey.UpArrow:
+            {
+                if (_currentIndex - 1 >= 0)
+                {
+                    _currentIndex--;
+                    needsRedraw = true;
+                }
+
+                if (_currentIndex - 1 < _scrolledRows && _scrolledRows > 0)
+                {
+                    _scrolledRows--;
+                    needsRedraw = true;
+                }
+
+                break;
+            }
+            case ConsoleKey.None:
+                needsRedraw = true;
+                break;
+        }
+
+        if (!needsRedraw)
+        {
+            return;
+        }
+
         Console.BackgroundColor = ConsoleColor.DarkMagenta;
         Console.ForegroundColor = ConsoleColor.White;
 
@@ -73,32 +157,41 @@ internal static class ListValueSetter
         const string ARROWS_START_BLANKS = "                            ";
         const string ARROWS_END_BLANKS = "                             ";
 
-        //top and bottom arrows 
+        //top arrow
         Console.CursorLeft = x + 1;
         Console.CursorTop = y + 3;
         Console.Write(ARROWS_START_BLANKS);
-        Console.Write("\u25b2");
+        Console.Write(_scrolledRows > 0 ? "\u25b2" : " ");
         Console.Write(ARROWS_END_BLANKS);
 
+        //bottom arrow
         Console.CursorLeft = x + 1;
         Console.CursorTop = y + _height - 2;
         Console.Write(ARROWS_START_BLANKS);
-        Console.Write("\u25bc");
+        Console.Write(_scrolledRows + MAX_ROWS < options.Length ? "\u25bc" : " ");
         Console.Write(ARROWS_END_BLANKS);
 
-        if (_values == null)
+        int maxIndex = Math.Min(_scrolledRows + MAX_ROWS, options.Length);
+        for (int i = _scrolledRows; i < maxIndex; i++)
         {
-            return;
-        }
+            using string blanks = new(' ', SettingsScreen.OVERLAY_WIDTH - 2 - options[i].Length);
 
-        for (int i = 0; i < _values.Length; i++)
-        {
-            using string blanks = new(' ', SettingsScreen.OVERLAY_WIDTH - 2 - _values[i].Length);
+            if (_currentIndex == i)
+            {
+                Console.BackgroundColor = ConsoleColor.DarkCyan;
+                Console.ForegroundColor = ConsoleColor.White;
+            }
 
             Console.CursorLeft = x + 1;
-            Console.CursorTop = y + 4 + i;
-            Console.Write(_values[i]);
+            Console.CursorTop = y + 4 + (i - _scrolledRows);
+            Console.Write(options[i]);
             Console.Write(blanks);
+
+            if (_currentIndex == i)
+            {
+                Console.BackgroundColor = ConsoleColor.DarkMagenta;
+                Console.ForegroundColor = ConsoleColor.White;
+            }
         }
     }
 }

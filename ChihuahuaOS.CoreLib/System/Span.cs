@@ -80,6 +80,11 @@ public readonly ref struct Span<T>
         }
     }
 
+    public static implicit operator Span<T>(T[]? array)
+    {
+        return new Span<T>(array);
+    }
+
     // /// <summary>
     // /// Returns false if left and right point at the same memory and have the same length.  Note that
     // /// this does *not* check to see if the *contents* are equal.

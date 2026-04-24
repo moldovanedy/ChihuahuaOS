@@ -1,15 +1,13 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using ChihuahuaOS.EfiApi;
-using ChihuahuaOS.EfiApi.BootServices;
 
 namespace Internal.Runtime.CompilerHelpers;
 
 /// <summary>
 /// Contains all the internals for object memory allocation and GC.
 /// </summary>
-internal unsafe class StartupCodeHelpers
+internal unsafe partial class StartupCodeHelpers
 {
     // A couple symbols the generated code will need we park them in this class
     // for no particular reason. These aid in transitioning to/from managed code.
@@ -127,32 +125,22 @@ internal unsafe class StartupCodeHelpers
         *dst = r;
     }
 
-    private static MethodTable** AllocObject(uint size)
+    [RuntimeExport("RhpByRefAssignRef")]
+    internal static void RhpByRefAssignRef(void** dst, void* r)
     {
-        MethodTable** result;
+        *dst = r;
+    }
 
-#if UEFI || DEBUG
+    [RuntimeExport("RhpWriteBarrier")]
+    internal static void RhpWriteBarrier(void** dst, void* r)
+    {
+        *dst = r;
+    }
 
-        if (Environment.EfiSysTable == null)
-        {
-            ThrowHelpers.ThrowNullReferenceException();
-            return null;
-        }
-
-        EfiStatus status =
-            Environment.EfiSysTable->BootServices->AllocatePool(EfiMemoryType.EfiLoaderData, size, (void**)&result);
-        if (status != EfiStatus.Success)
-        {
-            result = null;
-        }
-#endif
-
-        if (result == null)
-        {
-            Environment.FailFast("Allocation failed");
-        }
-
-        return result;
+    [RuntimeExport("RhpCheckedLockFreeAssignRef")]
+    internal static void RhpCheckedLockFreeAssignRef(void** dst, void* r)
+    {
+        *dst = r;
     }
 
     internal struct ArrayElement

@@ -4,11 +4,25 @@ namespace System;
 
 public struct Int64
 {
-    // ReSharper disable InconsistentNaming
-    public const long MaxValue = 0x7fffffffffffffffL;
+    public const long MaxValue = 0x7F_FF_FF_FF_FF_FF_FF_FFL;
 
     public const long MinValue = unchecked((long)0x8000000000000000L);
-    // ReSharper restore InconsistentNaming
+
+
+    public static bool TryParse(string s, out long result)
+    {
+        result = 0;
+
+        bool success = NumberParser.TryParseString(s, out long parsed);
+        if (!success)
+        {
+            return false;
+        }
+
+        result = parsed;
+        return true;
+    }
+
 
     public override string ToString()
     {

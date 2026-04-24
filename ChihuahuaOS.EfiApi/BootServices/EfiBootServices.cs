@@ -110,14 +110,12 @@ public readonly unsafe struct EfiBootServices
     private readonly IntPtr UninstallMultipleProtocolInterfaces;
 
     //
-    // 32-bit CRC Services
-    //
-    private readonly IntPtr CalculateCrc32;
-
-    //
     // Misc Services
     //
-    private readonly IntPtr CopyMem;
-    private readonly IntPtr SetMem;
-    private readonly IntPtr CreateEventEx;
+    private readonly IntPtr _CalculateCrc32;
+
+    public readonly delegate* unmanaged<void*, void*, ulong, EfiStatus> CopyMem;
+    public readonly delegate* unmanaged<void*, ulong, byte, EfiStatus> SetMem;
+
+    private readonly IntPtr _CreateEventEx;
 }

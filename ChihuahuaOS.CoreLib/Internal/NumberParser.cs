@@ -140,4 +140,65 @@ internal static class NumberParser
         digits.Dispose();
         return str;
     }
+
+    public static bool TryParseString(string s, out ulong result)
+    {
+        result = 0;
+        for (int i = 0; i < s.Length; i++)
+        {
+            if (s[i] < '0' || s[i] > '9')
+            {
+                result = 0;
+                return false;
+            }
+
+            ulong previous = result;
+            result = result * 10 + (ulong)(s[i] - 48);
+
+            //overflow!
+            if (previous > result)
+            {
+                result = 0;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static bool TryParseString(string s, out long result)
+    {
+        bool isNegative = false;
+        result = 0;
+        for (int i = 0; i < s.Length; i++)
+        {
+            if (i == 0 && s[i] == '-')
+            {
+                isNegative = true;
+            }
+
+            if (s[i] < '0' || s[i] > '9')
+            {
+                result = 0;
+                return false;
+            }
+
+            long previous = result;
+            result = result * 10 + (s[i] - 48);
+
+            //overflow!
+            if (previous > result)
+            {
+                result = 0;
+                return false;
+            }
+        }
+
+        if (isNegative)
+        {
+            result = -result;
+        }
+
+        return true;
+    }
 }

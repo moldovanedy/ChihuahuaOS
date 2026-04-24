@@ -66,4 +66,15 @@ public static unsafe class Unsafe
     [Intrinsic]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static extern void* Subtract<T>(void* source, int elementOffset);
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static extern TTo BitCast<TFrom, TTo>(TFrom source)
+        where TFrom : allows ref struct
+        where TTo : allows ref struct;
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static extern ref T AddByteOffset<T>(ref T source, nuint byteOffset)
+        where T : allows ref struct;
 }

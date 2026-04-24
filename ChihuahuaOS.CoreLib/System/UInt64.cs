@@ -4,11 +4,25 @@ namespace System;
 
 public struct UInt64
 {
-    // ReSharper disable InconsistentNaming
-    public const ulong MaxValue = 0xffffffffffffffffL;
+    public const ulong MaxValue = 0xFF_FF_FF_FF_FF_FF_FF_FFL;
 
     public const ulong MinValue = 0x0;
-    // ReSharper restore InconsistentNaming
+
+
+    public static bool TryParse(string s, out ulong result)
+    {
+        result = 0;
+
+        bool success = NumberParser.TryParseString(s, out ulong parsed);
+        if (!success)
+        {
+            return false;
+        }
+
+        result = parsed;
+        return true;
+    }
+
 
     public override string ToString()
     {

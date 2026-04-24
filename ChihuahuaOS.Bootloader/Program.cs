@@ -33,6 +33,7 @@ internal static class Program
         Environment.SetEfiSystemTableReference(systemTable);
 
         Console.Clear();
+        Console.CursorVisible = false;
         TuiRenderer.DrawPersistentElements();
 
         ConsoleKeyInfo keyStroke = new();

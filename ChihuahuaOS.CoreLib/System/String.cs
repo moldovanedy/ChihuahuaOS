@@ -168,6 +168,11 @@ public sealed class String : IDisposable
         return result;
     }
 
+    public bool Contains(char c)
+    {
+        return IndexOf(c) != -1;
+    }
+
     public bool EndsWith(char value)
     {
         if (value != '\0')
@@ -180,6 +185,27 @@ public sealed class String : IDisposable
 
         int lastPos = Length - 1;
         return (uint)lastPos < (uint)Length && this[lastPos] == value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int IndexOf(char c)
+    {
+        // ReSharper disable once IntroduceOptionalParameters.Global
+        return IndexOf(c, 0);
+    }
+
+    public int IndexOf(char c, int startIndex)
+    {
+        for (int i = startIndex; i < Length; i++)
+        {
+            char chr = this[i];
+            if (chr == c)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     public bool StartsWith(char value)
@@ -230,6 +256,46 @@ public sealed class String : IDisposable
         {
             return ptr;
         }
+    }
+
+    public string ToLowerInvariant()
+    {
+        char[] chars = new char[Length];
+        for (int i = 0; i < Length; i++)
+        {
+            if (this[i] >= 'A' && this[i] <= 'Z')
+            {
+                chars[i] = (char)(this[i] + 32);
+            }
+            else
+            {
+                chars[i] = this[i];
+            }
+        }
+
+        string newString = new(chars);
+        chars.Dispose();
+        return newString;
+    }
+
+    public string ToUpperInvariant()
+    {
+        char[] chars = new char[Length];
+        for (int i = 0; i < Length; i++)
+        {
+            if (this[i] >= 'a' && this[i] <= 'z')
+            {
+                chars[i] = (char)(this[i] - 32);
+            }
+            else
+            {
+                chars[i] = this[i];
+            }
+        }
+
+        string newString = new(chars);
+        chars.Dispose();
+        return newString;
     }
 
     public override string ToString()
@@ -354,7 +420,6 @@ public sealed class String : IDisposable
         return bigString;
     }
 
-    [Intrinsic] // Unrolled and vectorized for half-constant input
     public static bool Equals(string? a, string? b)
     {
         if (a is null || b is null || a.Length != b.Length)

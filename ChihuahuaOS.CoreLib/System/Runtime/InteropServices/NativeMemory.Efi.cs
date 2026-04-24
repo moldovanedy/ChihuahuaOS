@@ -39,7 +39,7 @@ public static unsafe class NativeMemory
                 byteCount,
                 (void**)&result);
 
-        Fill(*result, byteCount, 0);
+        Fill(result, byteCount, 0);
         return status != EfiStatus.Success ? null : result;
     }
 
@@ -75,8 +75,7 @@ public static unsafe class NativeMemory
             return;
         }
 
-        void* objectAddress = *(void**)ptr;
-        Environment.EfiSysTable->BootServices->FreePool(objectAddress);
+        Environment.EfiSysTable->BootServices->FreePool(ptr);
     }
 }
 

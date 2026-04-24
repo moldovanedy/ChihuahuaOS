@@ -6,7 +6,7 @@ internal static class SpanHelpers
 {
     [Intrinsic]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ClearWithoutReferences(ref byte dest, nuint len)
+    internal static void ClearWithoutReferences(ref byte dest, nuint len)
     {
         Fill(ref dest, 0, len);
     }

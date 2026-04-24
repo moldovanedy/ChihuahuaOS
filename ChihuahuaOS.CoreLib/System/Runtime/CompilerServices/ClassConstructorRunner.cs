@@ -12,7 +12,7 @@ internal static class ClassConstructorRunner
         ref StaticClassConstructionContext context,
         IntPtr nonGcStaticBase)
     {
-        CheckStaticClassConstruction(ref context);
+        EnsureStaticClassConstructorRun(ref context);
         return nonGcStaticBase;
     }
 
@@ -21,24 +21,27 @@ internal static class ClassConstructorRunner
         ref StaticClassConstructionContext context,
         IntPtr gcStaticBase)
     {
-        CheckStaticClassConstruction(ref context);
+        EnsureStaticClassConstructorRun(ref context);
         return gcStaticBase;
     }
 
     // ReSharper restore UnusedMember.Local
     // ReSharper restore InconsistentNaming
 
-    private static unsafe void CheckStaticClassConstruction(ref StaticClassConstructionContext context)
+    private static unsafe void EnsureStaticClassConstructorRun(ref StaticClassConstructionContext context)
     {
-        // Not dealing with multithreading issues in UEFI.
-        if (context.initialized == IntPtr.Zero)
+        //no multithreading yet
+        if (context.initialized != IntPtr.Zero)
         {
-            context.initialized = 1;
-            if (context.cctorMethodAddress != IntPtr.Zero)
-            {
-                IntPtr address = context.cctorMethodAddress;
-                ((delegate*<void>)address)();
-            }
+            return;
+        }
+
+        context.initialized = 1;
+        if (context.cctorMethodAddress != IntPtr.Zero)
+        {
+            IntPtr address = context.cctorMethodAddress;
+            ((delegate*<void>)address)();
+            context.cctorMethodAddress = IntPtr.Zero;
         }
     }
 }
