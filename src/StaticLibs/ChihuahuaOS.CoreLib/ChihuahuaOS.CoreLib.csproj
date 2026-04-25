@@ -18,7 +18,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
+        <ProjectReference Include="../../Boot/ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
     </ItemGroup>
 
     <!-- The project file pretends this is .NET, but it's not .NET. Remove all assembly references the .NET SDK added. -->

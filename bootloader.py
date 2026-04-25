@@ -5,7 +5,7 @@ proj_name = "ChihuahuaOS.Bootloader"
 class BootloaderBuilder(BaseBuilder):
 
     def get_proj_dir(self) -> str:
-        return proj_name + "/"
+        return "src/Boot/" + proj_name + "/"
 
     def get_proj_name(self) -> str:
         return proj_name
@@ -19,7 +19,7 @@ class BootloaderBuilder(BaseBuilder):
         ]
 
     def get_dist_path(self) -> str:
-        return proj_name + "/dist/"
+        return "src/Boot/" + proj_name + "/dist/"
     
     def get_dist_file_name(self) -> str:
         return "BOOTX64.EFI"
