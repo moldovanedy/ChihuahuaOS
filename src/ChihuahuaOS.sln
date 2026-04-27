@@ -6,23 +6,47 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.CoreLib", "Stat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.EfiApi", "Boot/ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj", "{26229BE9-4641-4CAE-BE98-3D439B205ACD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.CoreLib.Efi", "StaticLibs\ChihuahuaOS.CoreLib.Efi\ChihuahuaOS.CoreLib.Efi.csproj", "{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		DebugUefi|Any CPU = DebugUefi|Any CPU
+		ReleaseUefi|Any CPU = ReleaseUefi|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.DebugUefi|Any CPU.ActiveCfg = DebugUefi|Any CPU
+		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.DebugUefi|Any CPU.Build.0 = DebugUefi|Any CPU
+		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.ReleaseUefi|Any CPU.ActiveCfg = ReleaseUefi|Any CPU
+		{F67A7C2B-CD0C-463B-BD40-E91A64568504}.ReleaseUefi|Any CPU.Build.0 = ReleaseUefi|Any CPU
 		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.DebugUefi|Any CPU.ActiveCfg = DebugUefi|Any CPU
+		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.DebugUefi|Any CPU.Build.0 = DebugUefi|Any CPU
+		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.ReleaseUefi|Any CPU.ActiveCfg = ReleaseUefi|Any CPU
+		{38A64220-2E9C-47C7-B0C1-30326E60FF17}.ReleaseUefi|Any CPU.Build.0 = ReleaseUefi|Any CPU
 		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.DebugUefi|Any CPU.ActiveCfg = DebugUefi|Any CPU
+		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.DebugUefi|Any CPU.Build.0 = DebugUefi|Any CPU
+		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.ReleaseUefi|Any CPU.ActiveCfg = ReleaseUefi|Any CPU
+		{26229BE9-4641-4CAE-BE98-3D439B205ACD}.ReleaseUefi|Any CPU.Build.0 = ReleaseUefi|Any CPU
+		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}.DebugUefi|Any CPU.ActiveCfg = DebugUefi|Any CPU
+		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}.DebugUefi|Any CPU.Build.0 = DebugUefi|Any CPU
+		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}.ReleaseUefi|Any CPU.ActiveCfg = ReleaseUefi|Any CPU
+		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4}.ReleaseUefi|Any CPU.Build.0 = ReleaseUefi|Any CPU
 	EndGlobalSection
 EndGlobal

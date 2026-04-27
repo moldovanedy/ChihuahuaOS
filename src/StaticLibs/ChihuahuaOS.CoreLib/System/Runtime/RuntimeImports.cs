@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Internal.Runtime;
 using Internal.Runtime.CompilerHelpers;
 
 // ReSharper disable InconsistentNaming

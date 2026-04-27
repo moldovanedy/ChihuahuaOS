@@ -1,4 +1,4 @@
-using System.Runtime;
+using Internal.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ChihuahuaOS.CoreLib.Extra.Runtime;

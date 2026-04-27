@@ -1,0 +1,47 @@
+<Project>
+    
+    <Target Name="BflatBuild" AfterTargets="AfterBuild" Condition="'$(OutputType)' == 'Exe' and ('$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi')">
+        <Message Importance="high" Text="Starting bflat build for $(ProjectName)..." />
+
+        <MSBuild Projects="@(ProjectReference)" Targets="GetBflatSourceFiles">
+            <Output TaskParameter="TargetOutputs" ItemName="ReferencedSourceFiles" />
+        </MSBuild>
+
+        <ItemGroup>
+            <AllSourceFiles Include="@(Compile->'%(FullPath)')" />
+            <AllSourceFiles Include="@(ReferencedSourceFiles)" />
+            <!-- Filter out duplicate files and assembly attributes files -->
+            <DistinctSourceFiles Include="@(AllSourceFiles->Distinct())" Condition="!$([System.String]::new('%(FullPath)').Contains('AssemblyAttributes.cs'))" />
+        </ItemGroup>
+        
+        <PropertyGroup>
+            <PublishPath>$(OutputPath)publish/</PublishPath>
+        </PropertyGroup>
+
+        <MakeDir Directories="$(OutputPath)" />
+        <RemoveDir Directories="$(PublishPath)" />
+        <MakeDir Directories="$(PublishPath)" />
+
+        <PropertyGroup>
+            <BflatDefines>$([System.Text.RegularExpressions.Regex]::Replace('$(DefineConstants)', ';', ' '))</BflatDefines>
+            <BflatDefinesArgs>$([System.Text.RegularExpressions.Regex]::Replace('$(BflatDefines)', '([^ ]+)', '-d:$1'))</BflatDefinesArgs>
+            
+            <BflatArgs>build @(DistinctSourceFiles, ' ') $(BflatDefinesArgs) --no-pie --separate-symbols --stdlib none --os uefi</BflatArgs>
+            <BflatArgs>$(BflatArgs) -o $(PublishPath)BOOTX64.EFI --verbose</BflatArgs>
+        </PropertyGroup>
+
+        <Exec Command="$(BflatPath) $(BflatArgs)" />
+    </Target>
+
+    <Target Name="GetBflatSourceFiles" Returns="@(AllSourceFiles)">
+        <MSBuild Projects="@(ProjectReference)" Targets="GetBflatSourceFiles">
+            <Output TaskParameter="TargetOutputs" ItemName="ReferencedSourceFiles" />
+        </MSBuild>
+
+        <ItemGroup>
+            <AllSourceFiles Include="@(Compile->'%(FullPath)')" />
+            <AllSourceFiles Include="@(ReferencedSourceFiles)" />
+        </ItemGroup>
+    </Target>
+
+</Project>

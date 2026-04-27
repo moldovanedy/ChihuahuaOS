@@ -1,0 +1,12 @@
+<Project>
+    
+    <!-- This is not .NET. Remove all assembly references that .NET SDK added, but not the ones we added. -->
+    <Target AfterTargets="FindReferenceAssembliesForReferences" BeforeTargets="BeforeCompile" Name="RemoveNETStdLib">
+        <ItemGroup>
+            <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)" Condition="'%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' != 'ProjectReference'" />
+            <ReferencePath Remove="@(ReferencePath)" Condition="'%(ReferencePath.ReferenceSourceTarget)' != 'ProjectReference'" />
+        </ItemGroup>
+    </Target>
+
+    <Import Project="ChihuahuaOS.Uefi.targets"/>
+</Project>

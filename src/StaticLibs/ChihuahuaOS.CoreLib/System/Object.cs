@@ -1,4 +1,5 @@
-using System.Runtime;
+using Internal.Runtime;
+using System.Runtime.Versioning;
 
 namespace System;
 
@@ -29,5 +30,36 @@ public unsafe class Object
     {
         // The default for an object is to return the fully qualified name of the class.
         return "";
+    }
+
+    public virtual bool Equals(object? obj)
+    {
+        return this == obj;
+    }
+
+    public static bool Equals(object? objA, object? objB)
+    {
+        if (objA == objB)
+        {
+            return true;
+        }
+
+        if (objA == null || objB == null)
+        {
+            return false;
+        }
+
+        return objA.Equals(objB);
+    }
+
+    [NonVersionable]
+    public static bool ReferenceEquals(object? objA, object? objB)
+    {
+        return objA == objB;
+    }
+
+    public virtual int GetHashCode()
+    {
+        return 0;
     }
 }

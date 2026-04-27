@@ -1,9 +1,10 @@
-namespace System.Runtime;
+namespace Internal.Runtime;
 
 //this is a contract with the compiler, don't change the ordering and names
 internal unsafe struct MethodTable
 {
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+#pragma warning disable CS0169 // Field is never used
     // ReSharper disable InconsistentNaming
 
     internal ushort _usComponentSize;
@@ -15,5 +16,6 @@ internal unsafe struct MethodTable
     private uint _uHashCode;
 
     // ReSharper restore InconsistentNaming
+#pragma warning restore CS0169 // Field is never used
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 }

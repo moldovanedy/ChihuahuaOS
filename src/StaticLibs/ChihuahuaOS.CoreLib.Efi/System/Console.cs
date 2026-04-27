@@ -1,12 +1,11 @@
-#if UEFI || DEBUG
-
+#if UEFI
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.ConsoleSupport;
 using ChihuahuaOS.EfiApi.EfiSysTable;
 
 namespace System;
 
-public static unsafe partial class Console
+public static unsafe class Console
 {
     private const string NEWLINE = "\r\n\0";
 

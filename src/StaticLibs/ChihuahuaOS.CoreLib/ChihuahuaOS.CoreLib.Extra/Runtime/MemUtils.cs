@@ -1,7 +1,4 @@
-#if UEFI || DEBUG
-
 using System;
-using ChihuahuaOS.EfiApi.EfiSysTable;
 
 namespace ChihuahuaOS.CoreLib.Extra.Runtime;
 
@@ -19,18 +16,9 @@ public static class MemUtils
             return;
         }
 
-        EfiSystemTable* st = Environment.EfiSysTable;
-        if (st == null)
-        {
-            return;
-        }
-
         //this is OK, since we don't have a managed runtime and GC, so the "managed" pointer is simply the raw address
 #pragma warning disable CS8500 // This declares a pointer to a managed type
-        void* objectAddress = *(void**)&obj;
-        st->BootServices->FreePool(objectAddress);
+        CoreLibManager.Free(*(void**)&obj);
 #pragma warning restore CS8500 // This declares a pointer to a managed type
     }
 }
-
-#endif

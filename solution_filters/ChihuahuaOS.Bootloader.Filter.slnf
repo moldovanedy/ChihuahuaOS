@@ -1,10 +1,11 @@
 ﻿{
   "solution": {
-    "path": "../src/ChihuahuaOS.sln",
+    "path": "..\\src\\ChihuahuaOS.sln",
     "projects": [
-      "Boot/ChihuahuaOS.Bootloader/ChihuahuaOS.Bootloader.csproj",
-      "Boot/ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj",
-      "StaticLibs/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj"
+      "Boot\\ChihuahuaOS.Bootloader\\ChihuahuaOS.Bootloader.csproj",
+      "Boot\\ChihuahuaOS.EfiApi\\ChihuahuaOS.EfiApi.csproj",
+      "StaticLibs\\ChihuahuaOS.CoreLib.Efi\\ChihuahuaOS.CoreLib.Efi.csproj",
+      "StaticLibs\\ChihuahuaOS.CoreLib\\ChihuahuaOS.CoreLib.csproj"
     ]
   }
 }

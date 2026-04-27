@@ -1,7 +1,13 @@
 ﻿using System;
 using System.Runtime;
+using System.Runtime.InteropServices;
 using ChihuahuaOS.Bootloader.Tui;
+using ChihuahuaOS.CoreLib;
+using ChihuahuaOS.EfiApi;
+using ChihuahuaOS.EfiApi.BootServices;
 using ChihuahuaOS.EfiApi.EfiSysTable;
+using ChihuahuaOS.EfiApi.RuntimeServices;
+using Internal.Runtime.CompilerHelpers;
 
 namespace ChihuahuaOS.Bootloader;
 
@@ -32,6 +38,10 @@ internal static class Program
         systemTable->BootServices->SetWatchdogTimer(0, 0, 0, null);
         Environment.SetEfiSystemTableReference(systemTable);
 
+        CoreLibManager.Panic = &PanicHandler;
+        CoreLibManager.Malloc = &MallocHandler;
+        CoreLibManager.Free = &FreeHandler;
+
         Console.Clear();
         Console.CursorVisible = false;
         TuiRenderer.DrawPersistentElements();
@@ -49,5 +59,62 @@ internal static class Program
 
             keyStroke = TuiRenderer.WantsForcedRedraw() ? new ConsoleKeyInfo() : Console.ReadKey();
         }
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void PanicHandler(char* errorMsg)
+    {
+        Console.BackgroundColor = ConsoleColor.Black;
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.Write("Fatal error: ");
+        Console.WriteRaw(errorMsg);
+
+        Console.WriteLine(" Boot failed! Press any key to restart the device.");
+        _ = Console.ReadKey();
+
+        //restart
+        Environment.EfiSysTable->RuntimeServices->ResetSystem(EfiResetType.EfiResetCold, EfiStatus.Aborted, 0, null);
+
+        //this is unreachable, ResetSystem will not return
+        while (true)
+        {
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void* MallocHandler(uint size)
+    {
+        void* result;
+        if (Environment.EfiSysTable == null)
+        {
+            ThrowHelpers.ThrowNullReferenceException();
+            return null;
+        }
+
+        EfiStatus status =
+            Environment.EfiSysTable->BootServices->AllocatePool(EfiMemoryType.EfiLoaderData, size, &result);
+        if (status != EfiStatus.Success)
+        {
+            result = null;
+        }
+
+        if (result == null)
+        {
+            Environment.FailFast("Allocation failed");
+        }
+
+        return result;
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void FreeHandler(void* ptr)
+    {
+        EfiSystemTable* st = Environment.EfiSysTable;
+        if (st == null)
+        {
+            return;
+        }
+
+        st->BootServices->FreePool(ptr);
     }
 }
