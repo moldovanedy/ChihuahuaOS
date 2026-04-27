@@ -1,0 +1,7 @@
+{
+  "runtimes": {
+    "uefi-x64": {
+      "#import": [ "win-x64" ]
+    }
+  }
+}

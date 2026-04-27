@@ -3,13 +3,15 @@
     <Import Project="$(CustomSdkDir)ChihuahuaOS.CustomCoreLib.props" />
 
     <PropertyGroup>
+        <RuntimeIdentifier>uefi-x64</RuntimeIdentifier>
         <RootNamespace>""</RootNamespace>
         <Configurations>Debug;Release;DebugUefi;ReleaseUefi</Configurations>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="ChihuahuaOS.CoreLib.Efi" />
+        <ProjectReference Include="../ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
+        <ProjectReference Include="../../Boot/ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
     </ItemGroup>
 
 </Project>

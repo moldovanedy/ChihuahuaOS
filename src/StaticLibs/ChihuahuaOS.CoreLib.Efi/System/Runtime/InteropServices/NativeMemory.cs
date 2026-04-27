@@ -1,5 +1,4 @@
-#if UEFI || DEBUG
-
+#if UEFI
 using System.Runtime.CompilerServices;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.BootServices;

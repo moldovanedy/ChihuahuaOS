@@ -1,9 +1,8 @@
+#if UEFI
 using System.Runtime.InteropServices;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.SimpleFsProtocol;
 using Internal.Runtime.CompilerHelpers;
-
-#if UEFI || DEBUG
 
 namespace System.IO;
 
@@ -104,10 +103,15 @@ public unsafe class FileStream : Stream
     public override byte ReadByte()
     {
         byte[] buffer = new byte[sizeof(byte)];
-        Read(buffer, 0, buffer.Length);
+        int bytesRead = Read(buffer, 0, buffer.Length);
+        if (bytesRead == 0)
+        {
+            buffer.Dispose();
+            return 0;
+        }
+
         byte value = buffer[0];
         buffer.Dispose();
-
         return value;
     }
 

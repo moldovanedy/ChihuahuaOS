@@ -1,8 +1,7 @@
+#if UEFI
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.SimpleFsProtocol;
 using Internal.Runtime.CompilerHelpers;
-
-#if UEFI || DEBUG
 
 namespace System.IO;
 

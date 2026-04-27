@@ -99,9 +99,14 @@ public unsafe struct IntPtr
         return _value;
     }
 
-    public bool Equals(nint other)
+    public override bool Equals(object? other)
     {
-        return this == other;
+        if (other is IntPtr otherIntPtr)
+        {
+            return this == otherIntPtr;
+        }
+
+        return false;
     }
 
     public override string ToString()
@@ -126,6 +131,12 @@ public unsafe struct IntPtr
                 ThrowHelpers.ThrowFormatException();
                 return string.Empty;
         }
+    }
+
+    public override int GetHashCode()
+    {
+        // ReSharper disable once UsageOfDefaultStructEquality
+        return ((int)(nint)_value).GetHashCode();
     }
 
     public int ToInt32()

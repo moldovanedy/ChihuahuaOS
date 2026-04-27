@@ -1,3 +1,5 @@
+using Internal.Runtime;
+
 namespace System.Runtime.CompilerServices;
 
 public class RuntimeHelpers

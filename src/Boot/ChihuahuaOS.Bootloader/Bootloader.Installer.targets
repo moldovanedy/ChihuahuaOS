@@ -1,0 +1,17 @@
+<Project>
+    <Target Name="InstallBootloader" AfterTargets="BflatBuild" Condition="'$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi'">
+        <PropertyGroup>
+            <InstallDestination>$(FinalBinDir)EFI/BOOT/</InstallDestination>
+            <PublishPath>$(OutputPath)publish/</PublishPath>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <PublishFiles Include="$(PublishPath)**/*" />
+        </ItemGroup>
+
+        <Message Importance="high" Text="Installing Bootloader to $(InstallDestination)..." />
+
+        <MakeDir Directories="$(InstallDestination)" />
+        <Copy SourceFiles="@(PublishFiles)" DestinationFolder="$(InstallDestination)" SkipUnchangedFiles="true" />
+    </Target>
+</Project>

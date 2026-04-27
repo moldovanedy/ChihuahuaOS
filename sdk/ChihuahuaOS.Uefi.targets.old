@@ -1,0 +1,38 @@
+<Project>
+    <!-- NOTE: this was supposed to run ilc and then lld-link to create a UEFI app without bflat, but the resulting app doesn't work -->
+
+    <Target AfterTargets="CopyFilesToOutputDirectory" Condition="'$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi'" Name="CompileToNativeObject">
+        <PropertyGroup>
+            <ObjOutputPath>$(IntermediateOutputPath)$(TargetName).o</ObjOutputPath>
+            <PublishSubDir>$(OutputPath)publish/</PublishSubDir>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <!-- For Exe projects, we want to include all dlls from the output folder as references to ILC -->
+            <IlcReference Include="$(OutputPath)*.dll" />
+        </ItemGroup>
+
+        <RemoveDir Directories="$(PublishSubDir)" />
+        <MakeDir Directories="$(PublishSubDir)" />
+
+        <Message Importance="high" Text="Compiling $(OutputPath)$(TargetName).dll to $(ObjOutputPath) using ILC (with local references)..." />
+        <Exec Command="ilc -o &quot;$(ObjOutputPath)&quot; @(IlcReference->'&quot;%(Identity)&quot;', ' ') --targetos windows --targetarch x64 --systemmodule ChihuahuaOS.CoreLib --nativelib $(IlcArgs)" WorkingDirectory="$(ProjectDir)" />
+        <Copy DestinationFolder="$(PublishSubDir)" SourceFiles="$(ObjOutputPath)" />
+    </Target>
+
+    <Target AfterTargets="CompileToNativeObject" Condition="('$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi') and '$(OutputType)' == 'Exe'" Name="LinkUefiExecutable">
+        <PropertyGroup>
+            <EfiOutputPath>$(PublishSubDir)BOOTX64.EFI</EfiOutputPath>
+            <EntryPointSymbol>EfiMain</EntryPointSymbol>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <!-- In the single-object mode, we only need the .o file of the current project -->
+            <LinkObjFiles Include="$(PublishSubDir)$(TargetName).o" />
+        </ItemGroup>
+
+        <Message Importance="high" Text="Linking UEFI executable $(EfiOutputPath)..." />
+<!--        <Exec Command="lld-link /subsystem:efi_application /entry:$(EntryPointSymbol) /out:&quot;$(EfiOutputPath)&quot; @(LinkObjFiles->'&quot;%(Identity)&quot;', ' ')" WorkingDirectory="$(ProjectDir)" />-->
+        <Exec Command="lld-link /subsystem:EFI_APPLICATION /entry:$(EntryPointSymbol) /merge:.modules=.rdata /merge:.managedcode=.text /nodefaultlib /incremental:no /out:&quot;$(EfiOutputPath)&quot; &quot;$(ObjOutputPath)&quot;" WorkingDirectory="$(ProjectDir)" />
+    </Target>
+</Project>

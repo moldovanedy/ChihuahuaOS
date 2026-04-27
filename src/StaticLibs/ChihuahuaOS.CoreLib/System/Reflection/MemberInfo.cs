@@ -1,3 +1,5 @@
+using ChihuahuaOS.CoreLib;
+
 namespace System.Reflection;
 
 public abstract class MemberInfo : ICustomAttributeProvider
@@ -21,9 +23,9 @@ public abstract class MemberInfo : ICustomAttributeProvider
     //     }
     // }
 
-    public virtual bool HasSameMetadataDefinitionAs(MemberInfo other)
+    public virtual unsafe bool HasSameMetadataDefinitionAs(MemberInfo other)
     {
-        Environment.FailFast("MemberInfo.HasSameMetadataDefinitionAs called");
+        CoreLibManager.Panic("MemberInfo.HasSameMetadataDefinitionAs called".ToCharPtrUnsafe());
         return false;
     }
 

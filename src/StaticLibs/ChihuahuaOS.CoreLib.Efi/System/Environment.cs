@@ -1,9 +1,7 @@
-#if UEFI || DEBUG
-
+#if UEFI
 using System.Diagnostics.CodeAnalisys;
-using ChihuahuaOS.EfiApi;
+using ChihuahuaOS.CoreLib;
 using ChihuahuaOS.EfiApi.EfiSysTable;
-using ChihuahuaOS.EfiApi.RuntimeServices;
 
 namespace System;
 
@@ -14,20 +12,7 @@ public static unsafe class Environment
     [DoesNotReturn]
     public static void FailFast(string message)
     {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.Write("Fatal error: ");
-        Console.WriteLine(message);
-
-        Console.WriteLine("Boot failed! Press any key to restart the device.");
-        _ = Console.ReadKey();
-
-        //restart
-        EfiSysTable->RuntimeServices->ResetSystem(EfiResetType.EfiResetCold, EfiStatus.Aborted, 0, null);
-
-        //this is unreachable, ResetSystem will not return
-        while (true)
-        {
-        }
+        CoreLibManager.Panic(message.ToCharPtrUnsafe());
     }
 
     #region EFI specific

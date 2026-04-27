@@ -1,0 +1,25 @@
+<Project>
+    
+    <Import Project="ChihuahuaOS.BuildConfig.props" />
+    
+    <PropertyGroup>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <NoStdLib>true</NoStdLib>
+        <NoConfig>true</NoConfig>
+        <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+
+        <!-- Prevent the compiler for searching the toolchain for UEFI/ChihuahuaOS (there is none) -->
+        <SelfContained>false</SelfContained>
+        <UseAppHost>false</UseAppHost>
+        <DisableTransitiveFrameworkReferenceDownloads>true</DisableTransitiveFrameworkReferenceDownloads>
+        
+<!--        <IlcArgs Condition="'$(IlcArgs)' == ''"></IlcArgs>-->
+    </PropertyGroup>
+    
+    <Import Project="ChihuahuaOS.Uefi.props" />
+
+    <Import Project="ChihuahuaOS.CustomCoreLib.targets" />
+    
+</Project>

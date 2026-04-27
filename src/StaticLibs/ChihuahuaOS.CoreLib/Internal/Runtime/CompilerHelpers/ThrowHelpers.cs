@@ -1,76 +1,76 @@
-using System;
+using ChihuahuaOS.CoreLib;
 
 namespace Internal.Runtime.CompilerHelpers;
 
-internal static class ThrowHelpers
+public static unsafe class ThrowHelpers
 {
     public static void ThrowArgumentException()
     {
-        Environment.FailFast("Argument exception");
+        CoreLibManager.Panic("Argument exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowInvalidOperationException()
     {
-        Environment.FailFast("Invalid operation exception");
+        CoreLibManager.Panic("Invalid operation exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowInvalidCastException()
     {
-        Environment.FailFast("Invalid cast exception");
+        CoreLibManager.Panic("Invalid cast exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowOverflowException()
     {
-        Environment.FailFast("Overflow exception");
+        CoreLibManager.Panic("Overflow exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowFormatException()
     {
-        Environment.FailFast("Format exception");
+        CoreLibManager.Panic("Format exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowArgumentOutOfRangeException()
     {
-        Environment.FailFast("Argument out of range exception");
+        CoreLibManager.Panic("Argument out of range exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowNullReferenceException()
     {
-        Environment.FailFast("Null reference exception");
+        CoreLibManager.Panic("Null reference exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowIndexOutOfRangeException()
     {
-        Environment.FailFast("Index out of range exception");
+        CoreLibManager.Panic("Index out of range exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowDivideByZeroException()
     {
-        Environment.FailFast("Divide by zero exception");
+        CoreLibManager.Panic("Divide by zero exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowPlatformNotSupportedException()
     {
-        Environment.FailFast("Platform not supported exception");
+        CoreLibManager.Panic("Platform not supported exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowNotImplementedException()
     {
-        Environment.FailFast("Not implemented exception");
+        CoreLibManager.Panic("Not implemented exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowInvalidProgramException()
     {
-        Environment.FailFast("Invalid program exception");
+        CoreLibManager.Panic("Invalid program exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowStreamException()
     {
-        Environment.FailFast("Stream exception");
+        CoreLibManager.Panic("Stream exception".ToCharPtrUnsafe());
     }
 
     public static void ThrowInvalidProgramExceptionWithArgument()
     {
-        Environment.FailFast("Invalid program exception with argument");
+        CoreLibManager.Panic("Invalid program exception with argument".ToCharPtrUnsafe());
     }
 }

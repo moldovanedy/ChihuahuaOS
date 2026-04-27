@@ -1,0 +1,26 @@
+<Project>
+    
+    <PropertyGroup Condition="'$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi'">
+        <DefineConstants>$(DefineConstants);UEFI</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'DebugUefi'">
+        <Optimize>false</Optimize>
+        <DebugSymbols>true</DebugSymbols>
+        <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'ReleaseUefi'">
+        <Optimize>true</Optimize>
+        <DebugSymbols>false</DebugSymbols>
+        <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+    </PropertyGroup>
+
+    <!-- TODO: add here architecture-specific conditions and properties -->
+    <PropertyGroup Condition="'$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi'">
+        <PlatformTarget>x64</PlatformTarget>
+        <RuntimeOS>uefi</RuntimeOS>
+        <DefineConstants>$(DefineConstants);ARCH_X64</DefineConstants>
+    </PropertyGroup>
+    
+</Project>

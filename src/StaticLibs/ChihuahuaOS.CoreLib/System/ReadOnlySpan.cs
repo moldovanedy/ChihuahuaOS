@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using ChihuahuaOS.CoreLib;
 using Internal.Runtime.CompilerHelpers;
 
 namespace System;
@@ -55,7 +56,11 @@ public readonly ref struct ReadOnlySpan<T>
 // #if X64 || ARM64
         if ((ulong)(uint)start + (uint)length > (uint)array.Length)
         {
-            Environment.FailFast("ReadOnlySpan: given indices are outside the bounds of the array");
+            unsafe
+            {
+                CoreLibManager.Panic(
+                    "ReadOnlySpan: given indices are outside the bounds of the array".ToCharPtrUnsafe());
+            }
         }
 // #endif
 
@@ -83,4 +88,13 @@ public readonly ref struct ReadOnlySpan<T>
     {
         return new ReadOnlySpan<T>(array);
     }
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+
+    public static unsafe explicit operator T*(ReadOnlySpan<T> span)
+    {
+        return &span._reference;
+    }
+
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 }

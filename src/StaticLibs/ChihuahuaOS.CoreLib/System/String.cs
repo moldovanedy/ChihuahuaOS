@@ -1,4 +1,5 @@
 using System.Runtime;
+using Internal.Runtime;
 using System.Runtime.CompilerServices;
 using ChihuahuaOS.CoreLib.Extra.Runtime;
 using Internal.Runtime.CompilerHelpers;
@@ -150,6 +151,31 @@ public sealed class String : IDisposable
 
     #region Methods
 
+    public override bool Equals(object? obj)
+    {
+        if (obj is string strObject)
+        {
+            return strObject.Length == Length && EqualsHelper(this, strObject);
+        }
+
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        //for readonly field warning: we can safely suppress it, as the only time we actually modify _stringLength is
+        // when we internally create a new one, therefore making it impossible to set the field as readonly
+
+        // ReSharper disable once UsageOfDefaultStructEquality
+        // ReSharper disable once NonReadonlyMemberInGetHashCode
+        return _stringLength.GetHashCode();
+    }
+
+    public override string ToString()
+    {
+        return this;
+    }
+
     /// <summary>
     /// Unlike in regular .NET, this actually creates a completely new string with the same contents.
     /// </summary>
@@ -298,11 +324,6 @@ public sealed class String : IDisposable
         return newString;
     }
 
-    public override string ToString()
-    {
-        return this;
-    }
-
     #endregion
 
 
@@ -420,15 +441,15 @@ public sealed class String : IDisposable
         return bigString;
     }
 
-    public static bool Equals(string? a, string? b)
-    {
-        if (a is null || b is null || a.Length != b.Length)
-        {
-            return false;
-        }
-
-        return EqualsHelper(a, b);
-    }
+    // public static bool Equals(string? a, string? b)
+    // {
+    //     if (a is null || b is null || a.Length != b.Length)
+    //     {
+    //         return false;
+    //     }
+    //
+    //     return EqualsHelper(a, b);
+    // }
 
     public static bool IsNullOrEmpty(string? value)
     {

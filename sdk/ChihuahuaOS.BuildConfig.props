@@ -1,0 +1,5 @@
+<Project>
+    <PropertyGroup>
+        <BflatPath>$(MSBuildThisFileDirectory)../tools/bflat-10.0.0-rc.1/bflat</BflatPath>
+    </PropertyGroup>
+</Project>
