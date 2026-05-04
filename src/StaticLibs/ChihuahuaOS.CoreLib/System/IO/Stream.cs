@@ -1,3 +1,4 @@
+using ChihuahuaOS.CoreLib.Extra.Runtime;
 using Internal.Runtime.CompilerHelpers;
 
 namespace System.IO;
@@ -87,5 +88,6 @@ public abstract class Stream : IDisposable
     public void Dispose()
     {
         Close();
+        MemUtils.FreeMemory(this);
     }
 }

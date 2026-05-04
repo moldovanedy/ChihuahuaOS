@@ -39,6 +39,7 @@ internal static class Program
         Environment.SetEfiSystemTableReference(systemTable);
 
         CoreLibManager.Panic = &PanicHandler;
+        CoreLibManager.PrimitiveDebug = &PrimitiveDebugHandler;
         CoreLibManager.Malloc = &MallocHandler;
         CoreLibManager.Free = &FreeHandler;
 
@@ -72,13 +73,30 @@ internal static class Program
         Console.WriteLine(" Boot failed! Press any key to restart the device.");
         _ = Console.ReadKey();
 
-        //restart
+        //reboot
         Environment.EfiSysTable->RuntimeServices->ResetSystem(EfiResetType.EfiResetCold, EfiStatus.Aborted, 0, null);
 
         //this is unreachable, ResetSystem will not return
         while (true)
         {
         }
+        
+        // ReSharper disable once FunctionNeverReturns
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void PrimitiveDebugHandler(char* errorMsg)
+    {
+        ConsoleColor bg = Console.BackgroundColor;
+        ConsoleColor fg = Console.ForegroundColor;
+
+        Console.BackgroundColor = ConsoleColor.Black;
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write("DBG: ");
+        Console.WriteRaw(errorMsg);
+
+        Console.BackgroundColor = bg;
+        Console.ForegroundColor = fg;
     }
 
     [UnmanagedCallersOnly]

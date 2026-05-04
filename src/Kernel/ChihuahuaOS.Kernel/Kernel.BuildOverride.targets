@@ -1,0 +1,22 @@
+<Project>
+    <Target Name="LinkExecutable" AfterTargets="CompileToNativeObject" Condition="('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release') and '$(OutputType)' == 'Exe'">
+        <PropertyGroup>
+            <KernelName>ChihuahuaOS.Kernel.$(Version).elf</KernelName>
+            <AppFinalOutputPath>$(PublishSubDir)$(KernelName)</AppFinalOutputPath>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <!-- In the single-object mode, we only need the .o file of the current project -->
+            <LinkObjFiles Include="$(PublishSubDir)$(TargetName).o" />
+        </ItemGroup>
+
+        <PropertyGroup>
+            <LldArgs>-z now -z relro -z noexecstack --hash-style=gnu --as-needed --discard-all --gc-sections --nostdlib --no-demangle</LldArgs>
+            <LldArgs>$(LldArgs) -T $(MSBuildProjectDirectory)/Arch/$(ArchName)/linker.ld</LldArgs>
+            <LldArgs>$(LldArgs) --defsym=main=$(EntryPointSymbol) -o&quot;$(AppFinalOutputPath)&quot; &quot;$(ObjOutputPath)&quot;</LldArgs>
+        </PropertyGroup>
+
+        <Message Importance="high" Text="Linking executable &quot;$(AppFinalOutputPath)&quot;..." />
+        <Exec Command="ld.lld $(LldArgs)" WorkingDirectory="$(ProjectDir)" />
+    </Target>
+</Project>

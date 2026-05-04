@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="$(CustomSdkDir)ChihuahuaOS.CustomCoreLib.props" />
+    <Import Project="Kernel.BuildOverride.targets" />
+    <Import Project="Kernel.Installer.targets" />
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <Configurations>Debug;Release</Configurations>
+        <EntryPointSymbol>_start</EntryPointSymbol>
+        <Platforms>AnyCPU</Platforms>
+        <Version>0.1.0</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../../StaticLibs/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
+
+        <ProjectReference Include="../../Boot/ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
+        <ProjectReference Include="../../StaticLibs/ChihuahuaOS.MemPaginator/ChihuahuaOS.MemPaginator.csproj" />
+    </ItemGroup>
+
+</Project>

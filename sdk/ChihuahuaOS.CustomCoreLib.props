@@ -14,12 +14,37 @@
         <SelfContained>false</SelfContained>
         <UseAppHost>false</UseAppHost>
         <DisableTransitiveFrameworkReferenceDownloads>true</DisableTransitiveFrameworkReferenceDownloads>
-        
-<!--        <IlcArgs Condition="'$(IlcArgs)' == ''"></IlcArgs>-->
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <IntemediateFilesGlob Include="*.o" />
+        <IntemediateFilesGlob Include="*.pdb" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'Debug'">
+        <Optimize>false</Optimize>
+        <DebugSymbols>true</DebugSymbols>
+        <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'ReleaseUefi' or '$(Configuration)' == 'Release'">
+        <Optimize>true</Optimize>
+        <DebugSymbols>false</DebugSymbols>
+        <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+    </PropertyGroup>
+
+    <!-- TODO: add here architecture-specific conditions and properties -->
+    <PropertyGroup>
+        <PlatformTarget>x64</PlatformTarget>
+        <ArchName>X64</ArchName>
+        <DefineConstants>$(DefineConstants);ARCH_X64</DefineConstants>
     </PropertyGroup>
     
     <Import Project="ChihuahuaOS.Uefi.props" />
+    <Import Project="ChihuahuaOS.LowOS.props" />
 
     <Import Project="ChihuahuaOS.CustomCoreLib.targets" />
+    <Import Project="ChihuahuaOS.Uefi.targets"/>
+    <Import Project="ChihuahuaOS.LowOS.targets" />
     
 </Project>

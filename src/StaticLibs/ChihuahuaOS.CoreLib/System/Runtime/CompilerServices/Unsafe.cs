@@ -46,6 +46,9 @@ public static unsafe class Unsafe
     [Intrinsic]
     public static extern ref T AsRef<T>(void* source);
 
+    [Intrinsic]
+    public static extern ref T AsRef<T>(in T source);
+
     /// <summary>
     /// Determines the byte offset from origin to target from the given references.
     /// </summary>

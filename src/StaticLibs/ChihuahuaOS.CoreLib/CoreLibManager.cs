@@ -11,6 +11,12 @@ public static unsafe class CoreLibManager
     public static delegate* unmanaged<byte*, void> Panic { get; set; }
 #endif
 
+#if UEFI
+    public static delegate* unmanaged<char*, void> PrimitiveDebug { get; set; }
+#else
+    public static delegate* unmanaged<byte*, void> PrimitiveDebug { get; set; }
+#endif
+
     public static delegate* unmanaged<uint, void*> Malloc { get; set; }
 
     public static delegate* unmanaged<void*, void> Free { get; set; }

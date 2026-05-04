@@ -15,6 +15,9 @@
         <ProjectReference Include="../../StaticLibs/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
         <ProjectReference Include="../../StaticLibs/ChihuahuaOS.CoreLib.Efi/ChihuahuaOS.CoreLib.Efi.csproj" />
         <ProjectReference Include="../ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
+
+        <ProjectReference Include="../../StaticLibs/ChihuahuaOS.MemPaginator/ChihuahuaOS.MemPaginator.csproj" />
+        <ProjectReference Include="../../StaticLibs/ChihuahuaOS.Elf/ChihuahuaOS.Elf.csproj" />
     </ItemGroup>
 
 </Project>

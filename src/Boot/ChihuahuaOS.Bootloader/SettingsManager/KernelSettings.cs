@@ -12,8 +12,8 @@ public struct KernelSettings
 
     #region Display
 
-    public int ScreenWidth = 1920;
-    public int ScreenHeight = 1080;
+    public uint ScreenWidth = 0;
+    public uint ScreenHeight = 0;
 
     #endregion
 
@@ -30,7 +30,7 @@ public struct KernelSettings
             {
                 case nameof(ScreenWidth):
                 {
-                    if (int.TryParse(setting.Value, out int screenWidth))
+                    if (uint.TryParse(setting.Value, out uint screenWidth))
                     {
                         kSettings.ScreenWidth = screenWidth;
                     }
@@ -39,7 +39,7 @@ public struct KernelSettings
                 }
                 case nameof(ScreenHeight):
                 {
-                    if (int.TryParse(setting.Value, out int screenHeight))
+                    if (uint.TryParse(setting.Value, out uint screenHeight))
                     {
                         kSettings.ScreenHeight = screenHeight;
                     }

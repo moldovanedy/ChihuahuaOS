@@ -1,0 +1,8 @@
+<Project>
+    
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release'">
+        <DefineConstants>$(DefineConstants);CHIHUAHUAOS</DefineConstants>
+        <RuntimeOS>chihuahuaos</RuntimeOS>
+    </PropertyGroup>
+    
+</Project>

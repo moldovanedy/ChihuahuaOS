@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using ChihuahuaOS.Bootloader.BootSequence;
 using ChihuahuaOS.CoreLib.Extra;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.RuntimeServices;
@@ -9,6 +11,8 @@ internal static class MainScreen
 {
     private static int _numOptions;
     private static StaticRef<OsVersion[]> _availableOsVersions;
+    private static bool _shouldShowChihuahuaBootManager = true;
+    private static bool _justToggledBootManagerOption;
 
     private static int _currentOption;
     private static bool _wantsBootAbort;
@@ -20,6 +24,8 @@ internal static class MainScreen
 
     public static void OnEnterScreen()
     {
+        LoadBootManagerTuiOption();
+
         //TODO: actually check and list all OS versions
         _numOptions = 4;
         _availableOsVersions.GetValue()?.Dispose();
@@ -65,20 +71,31 @@ internal static class MainScreen
                 return;
             case ConsoleKey.Enter:
             {
+                if (!_availableOsVersions.HasValue())
+                {
+                    break;
+                }
+
+                OsVersion[] osVersions = _availableOsVersions.GetValue()!;
                 if (_currentOption < _numOptions - 2)
                 {
                     if (_currentOption % 2 == 0)
                     {
-                        //TODO: boot the OS   
+                        Launcher.StartBoot(osVersions[_currentOption / 2]);
+
+                        //normally, the launcher should not return except due to an error, so redraw everything if
+                        // that's the case, cause it definitely cleared the entire screen
+                        TuiRenderer.DrawPersistentElements();
+                        OnEnterScreen();
+                        return;
                     }
-                    else if (_availableOsVersions.HasValue())
-                    {
-                        _settingsOsVersion = _availableOsVersions.GetValue()![_currentOption / 2];
-                    }
+
+                    _settingsOsVersion = osVersions[_currentOption / 2];
                 }
                 else if (_currentOption == _numOptions - 2)
                 {
-                    //TODO: add boot manager settings
+                    _shouldShowChihuahuaBootManager = !_shouldShowChihuahuaBootManager;
+                    SaveBootManagerTuiOption();
                 }
                 else if (_currentOption == _numOptions - 1)
                 {
@@ -113,6 +130,14 @@ internal static class MainScreen
 
         if (_currentOption == previousOption)
         {
+            //special case for the TUI boot manager toggle
+            if (_currentOption == _numOptions - 2)
+            {
+                _justToggledBootManagerOption = true;
+                RedrawOption(_currentOption, true);
+                _justToggledBootManagerOption = false;
+            }
+
             return;
         }
 
@@ -168,7 +193,7 @@ internal static class MainScreen
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        if (index < _numOptions - 2)
+        if (index < _numOptions - 2 && osVersions.Length > 0)
         {
             if (index % 2 == 0)
             {
@@ -186,9 +211,28 @@ internal static class MainScreen
         }
         else if (index == _numOptions - 2)
         {
-            const string OPTION_N_2 = " Enter Chihuahua boot manager settings";
+            const string OPTION_N_2 = " Show Chihuahua interactive boot manager";
             Console.Write(OPTION_N_2);
             charsDrawn += OPTION_N_2.Length;
+
+            ConsoleColor prevBgColor = Console.BackgroundColor;
+            if (_justToggledBootManagerOption)
+            {
+                Console.BackgroundColor = ConsoleColor.DarkMagenta;
+            }
+
+            int wsPosition = charsDrawn + 1;
+            int valuePosition = Console.BufferWidth - 1 - (_shouldShowChihuahuaBootManager ? 3 : 2);
+            Console.CursorLeft = valuePosition;
+            Console.Write(_shouldShowChihuahuaBootManager ? "Yes" : "No");
+            charsDrawn += _shouldShowChihuahuaBootManager ? 3 : 2;
+
+            if (_justToggledBootManagerOption)
+            {
+                Console.BackgroundColor = prevBgColor;
+            }
+
+            Console.CursorLeft = wsPosition;
         }
         else if (index == _numOptions - 1)
         {
@@ -226,7 +270,7 @@ internal static class MainScreen
         Console.CursorTop = startRow;
 
         Console.Write(" INFO: ");
-        if (index < _numOptions - 2)
+        if (index < _numOptions - 2 && osVersions.Length > 0)
         {
             if (index % 2 == 0)
             {
@@ -246,7 +290,8 @@ internal static class MainScreen
         else if (index == _numOptions - 2)
         {
             const string OPTION_DESC_N_2 =
-                "Configure the settings for this graphical boot manager settings.";
+                "Control whether this graphical boot manager will appear or not (effective after next reboot," +
+                " can be toggled back on from the OS itself).";
             Console.Write(OPTION_DESC_N_2);
         }
         else if (index == _numOptions - 1)
@@ -254,8 +299,8 @@ internal static class MainScreen
             const string OPTION_DESC_N_1_SUPPORTED =
                 "Reboot the system and enter into the device's firmware settings.";
             const string OPTION_DESC_N_1_UNSUPPORTED =
-                "Reboot the system and enter into the device's firmware settings (might not work on this device, " +
-                "so it might reboot in this same screen).";
+                "Reboot the system and enter into the device's firmware settings (might not work on this device," +
+                " so it might reboot in this same screen).";
 
             Console.Write(_supportsBootToFw ? OPTION_DESC_N_1_SUPPORTED : OPTION_DESC_N_1_UNSUPPORTED);
         }
@@ -361,6 +406,23 @@ internal static class MainScreen
             }
 
             _supportsBootToFw = (osIndications & EFI_OS_INDICATIONS_BOOT_TO_FW_UI) != 0;
+        }
+    }
+
+    private const string SETTINGS_FILE_PATH = "\\EFI\\BOOT\\ChiOS_BootMgrOptions.BIN";
+
+    private static void SaveBootManagerTuiOption()
+    {
+        using FileStream? fs = File.Open(SETTINGS_FILE_PATH, FileMode.OpenOrCreate, FileAccess.Write);
+        fs?.WriteByte(_shouldShowChihuahuaBootManager ? (byte)1 : (byte)0);
+    }
+
+    private static void LoadBootManagerTuiOption()
+    {
+        using FileStream? fs = File.OpenRead(SETTINGS_FILE_PATH);
+        if (fs != null)
+        {
+            _shouldShowChihuahuaBootManager = fs.ReadByte() != 0;
         }
     }
 

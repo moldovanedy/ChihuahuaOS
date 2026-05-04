@@ -1,6 +1,6 @@
 namespace ChihuahuaOS.EfiApi.BootServices;
 
-public enum EfiMemoryType
+public enum EfiMemoryType : uint
 {
     EfiReservedMemoryType = 0,
     EfiLoaderCode = 1,

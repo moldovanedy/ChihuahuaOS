@@ -58,8 +58,12 @@ public readonly ref struct ReadOnlySpan<T>
         {
             unsafe
             {
+#if UEFI
                 CoreLibManager.Panic(
                     "ReadOnlySpan: given indices are outside the bounds of the array".ToCharPtrUnsafe());
+#else
+                CoreLibManager.Panic((byte*)"ReadOnlySpan: given indices are outside the bounds of the array"u8);
+#endif
             }
         }
 // #endif

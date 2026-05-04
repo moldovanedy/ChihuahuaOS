@@ -130,6 +130,7 @@ public unsafe class FileStream : Stream
 
     public override void Close()
     {
+        Flush();
         _efiFile->Close(_efiFile);
     }
 

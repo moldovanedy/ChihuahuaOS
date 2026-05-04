@@ -25,7 +25,14 @@ public abstract class MemberInfo : ICustomAttributeProvider
 
     public virtual unsafe bool HasSameMetadataDefinitionAs(MemberInfo other)
     {
+#if UEFI
         CoreLibManager.Panic("MemberInfo.HasSameMetadataDefinitionAs called".ToCharPtrUnsafe());
+#else
+        unsafe
+        {
+            CoreLibManager.Panic((byte*)"MemberInfo.HasSameMetadataDefinitionAs called"u8);
+        }
+#endif
         return false;
     }
 

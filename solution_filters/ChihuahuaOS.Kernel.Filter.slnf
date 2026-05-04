@@ -1,0 +1,11 @@
+﻿{
+  "solution": {
+    "path": "..\\src\\ChihuahuaOS.sln",
+    "projects": [
+      "Boot\\ChihuahuaOS.EfiApi\\ChihuahuaOS.EfiApi.csproj",
+      "Kernel\\ChihuahuaOS.Kernel\\ChihuahuaOS.Kernel.csproj",
+      "StaticLibs\\ChihuahuaOS.CoreLib\\ChihuahuaOS.CoreLib.csproj",
+      "StaticLibs\\ChihuahuaOS.MemPaginator\\ChihuahuaOS.MemPaginator.csproj"
+    ]
+  }
+}

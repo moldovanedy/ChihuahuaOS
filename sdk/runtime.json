@@ -1,7 +1,17 @@
 {
   "runtimes": {
+    "uefi": {
+      "#import": [ "win" ]
+    },
     "uefi-x64": {
-      "#import": [ "win-x64" ]
+      "#import": [ "uefi", "win-x64" ]
+    },
+
+    "chihuahuaos": {
+      "#import": [ "unix" ]
+    },
+    "chihuahuaos-x64": {
+      "#import": [ "chihuahuaos", "unix-x64" ]
     }
   }
 }

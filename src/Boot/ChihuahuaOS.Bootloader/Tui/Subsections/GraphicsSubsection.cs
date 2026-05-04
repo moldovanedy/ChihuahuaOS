@@ -84,7 +84,7 @@ internal class GraphicsSubsection : ISubsection
         {
             case PREFERRED_SCREEN_SIZE_Y_POS:
             {
-                return SettingsScreen.KernelSettings.ScreenWidth + "x" + SettingsScreen.KernelSettings.ScreenHeight;
+                return SettingsScreen.KSettings.ScreenWidth + "x" + SettingsScreen.KSettings.ScreenHeight;
             }
             default:
                 return null;
@@ -104,15 +104,15 @@ internal class GraphicsSubsection : ISubsection
                 }
 
                 using string widthStr = newValue.Substring(0, separatorIdx);
-                if (int.TryParse(widthStr, out int width))
+                if (uint.TryParse(widthStr, out uint width))
                 {
-                    SettingsScreen.KernelSettings.ScreenWidth = width;
+                    SettingsScreen.KSettings.ScreenWidth = width;
                 }
 
                 using string heightStr = newValue.Substring(separatorIdx + 1, newValue.Length - separatorIdx - 1);
-                if (int.TryParse(heightStr, out int height))
+                if (uint.TryParse(heightStr, out uint height))
                 {
-                    SettingsScreen.KernelSettings.ScreenHeight = height;
+                    SettingsScreen.KSettings.ScreenHeight = height;
                 }
 
                 break;
@@ -145,7 +145,7 @@ internal class GraphicsSubsection : ISubsection
             case >= PREFERRED_SCREEN_SIZE_Y_POS:
             {
                 using string settingStr =
-                    SettingsScreen.KernelSettings.ScreenWidth + "x" + SettingsScreen.KernelSettings.ScreenHeight;
+                    SettingsScreen.KSettings.ScreenWidth + "x" + SettingsScreen.KSettings.ScreenHeight;
                 SettingsScreen.DrawIndividualSetting(
                     absoluteRowStart + PREFERRED_SCREEN_SIZE_Y_POS,
                     PREFERRED_SCREEN_SIZE_NAME,

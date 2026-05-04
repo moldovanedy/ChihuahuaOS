@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using ChihuahuaOS.CoreLib.Extra.Runtime;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.ConsoleSupport;
 
@@ -58,6 +59,7 @@ public static unsafe partial class Gop
         public void Dispose()
         {
             _gopRef = null;
+            MemUtils.FreeMemory(this);
         }
     }
 }

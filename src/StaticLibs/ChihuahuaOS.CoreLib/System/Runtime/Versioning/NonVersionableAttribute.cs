@@ -5,7 +5,4 @@ namespace System.Runtime.Versioning;
     Inherited = false)]
 internal sealed class NonVersionableAttribute : Attribute
 {
-    public NonVersionableAttribute()
-    {
-    }
 }

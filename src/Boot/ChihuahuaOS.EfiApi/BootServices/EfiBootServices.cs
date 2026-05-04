@@ -20,9 +20,9 @@ public readonly unsafe struct EfiBootServices
     // Memory functions
     //
 
-    private readonly IntPtr _AllocatePages;
-    private readonly IntPtr _FreePages;
-    private readonly IntPtr _GetMemoryMap;
+    public readonly delegate* unmanaged<EfiAllocateType, EfiMemoryType, ulong, ulong*, EfiStatus> AllocatePages;
+    public readonly delegate* unmanaged<ulong, ulong, EfiStatus> FreePages;
+    public readonly delegate* unmanaged<ulong*, EfiMemoryDescriptor*, ulong*, ulong*, uint*, EfiStatus> GetMemoryMap;
     public readonly delegate* unmanaged<EfiMemoryType, ulong, void**, EfiStatus> AllocatePool;
     public readonly delegate* unmanaged<void*, EfiStatus> FreePool;
 

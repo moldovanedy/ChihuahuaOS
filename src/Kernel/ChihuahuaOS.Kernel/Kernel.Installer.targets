@@ -1,0 +1,17 @@
+<Project>
+    <Target Name="InstallKernel" AfterTargets="LinkExecutable" Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release'">
+        <PropertyGroup>
+            <InstallDestination>$(FinalBinDir)EFI/BOOT/</InstallDestination>
+            <PublishPath>$(OutputPath)publish/</PublishPath>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <PublishFiles Include="$(PublishPath)**/*" />
+        </ItemGroup>
+
+        <Message Importance="high" Text="Installing Kernel to &quot;$(InstallDestination)&quot;..." />
+
+        <MakeDir Directories="$(InstallDestination)" />
+        <Copy SourceFiles="@(PublishFiles)" DestinationFolder="$(InstallDestination)" SkipUnchangedFiles="true" />
+    </Target>
+</Project>

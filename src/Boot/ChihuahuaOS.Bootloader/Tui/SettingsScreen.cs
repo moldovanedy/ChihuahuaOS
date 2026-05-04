@@ -12,7 +12,7 @@ public static class SettingsScreen
 
     internal static int MainTableHeight;
     internal static int CurrentCursorPosition = 2;
-    internal static KernelSettings KernelSettings;
+    internal static KernelSettings KSettings;
 
     private static bool _wantsBackNavigation;
     private static OsVersion _osVersion;
@@ -301,7 +301,7 @@ public static class SettingsScreen
     private static void LoadSettings()
     {
         using string settingsFilePath = "\\EFI\\BOOT\\ChiOS_" + _osVersion + ".CFG";
-        FileStream? fs = File.OpenRead(settingsFilePath);
+        using FileStream? fs = File.OpenRead(settingsFilePath);
         if (fs == null)
         {
             using string errCodeString = ((long)File.LastOpenError & 0xffL).ToString();
@@ -317,7 +317,7 @@ public static class SettingsScreen
         }
 
         List<TomlSetting> settings = TomlManager.ReadFromStream(fs, KernelSettings.NUM_SETTINGS);
-        KernelSettings = KernelSettings.FromConfigList(settings);
+        KSettings = KernelSettings.FromConfigList(settings);
         settings.Dispose();
     }
 
@@ -328,7 +328,7 @@ public static class SettingsScreen
         Console.ForegroundColor = ConsoleColor.White;
 
         using string settingsFilePath = "\\EFI\\BOOT\\ChiOS_" + _osVersion + ".CFG";
-        FileStream? fs = File.Open(settingsFilePath, FileMode.OpenOrCreate, FileAccess.Write);
+        using FileStream? fs = File.Open(settingsFilePath, FileMode.OpenOrCreate, FileAccess.Write);
         if (fs == null)
         {
             Console.BackgroundColor = ConsoleColor.DarkRed;
@@ -339,7 +339,7 @@ public static class SettingsScreen
             return;
         }
 
-        List<TomlSetting> configList = KernelSettings.ToConfigList();
+        List<TomlSetting> configList = KSettings.ToConfigList();
         bool success = TomlManager.WriteToStream(fs, configList);
 
         if (success)

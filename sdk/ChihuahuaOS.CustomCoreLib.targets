@@ -1,12 +1,40 @@
 <Project>
     
     <!-- This is not .NET. Remove all assembly references that .NET SDK added, but not the ones we added. -->
-    <Target AfterTargets="FindReferenceAssembliesForReferences" BeforeTargets="BeforeCompile" Name="RemoveNETStdLib">
+    <Target Name="RemoveNETStdLib" AfterTargets="FindReferenceAssembliesForReferences" BeforeTargets="BeforeCompile">
         <ItemGroup>
-            <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)" Condition="'%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' != 'ProjectReference'" />
-            <ReferencePath Remove="@(ReferencePath)" Condition="'%(ReferencePath.ReferenceSourceTarget)' != 'ProjectReference'" />
+            <ReferencePathWithRefAssemblies 
+                Remove="@(ReferencePathWithRefAssemblies)" 
+                Condition="'%(ReferencePathWithRefAssemblies.ReferenceSourceTarget)' != 'ProjectReference'" />
+            <ReferencePath 
+                Remove="@(ReferencePath)" 
+                Condition="'%(ReferencePath.ReferenceSourceTarget)' != 'ProjectReference'" />
+        </ItemGroup>
+    </Target>
+    
+    <Target Name="CompileAsmFiles" BeforeTargets="AssignTargetPaths">
+        <ItemGroup>
+            <AsmFiles Include="**/*.asm" />
+        </ItemGroup>
+
+        <Message Importance="high" Text="Compiling assembly files for $(ProjectName)..." Condition="'@(AsmFiles)' != ''" />
+        
+        <!-- compile ASM for UEFI -->
+        <Exec 
+            Command="nasm -f win64 %(AsmFiles.Identity) -o $(OutputPath)%(AsmFiles.Filename).o" 
+            Condition="'@(AsmFiles)' != '' and ('$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi')" />
+        <!-- compile ASM for regular ChihuahuaOS -->
+        <Exec
+            Command="nasm -f elf64 %(AsmFiles.Identity) -o $(OutputPath)%(AsmFiles.Filename).o"
+            Condition="'@(AsmFiles)' != '' and '$(Configuration)' != 'DebugUefi' and '$(Configuration)' != 'ReleaseUefi'" />
+
+        <!-- always copy all the compiled object files to the project's output dir -->
+        <ItemGroup Condition="'@(AsmFiles)' != ''">
+            <None Include="$(OutputPath)%(AsmFiles.Filename).o">
+                <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+                <Link>%(AsmFiles.Filename).o</Link>
+            </None>
         </ItemGroup>
     </Target>
 
-    <Import Project="ChihuahuaOS.Uefi.targets"/>
 </Project>

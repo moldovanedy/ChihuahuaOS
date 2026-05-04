@@ -41,7 +41,11 @@ internal unsafe class StartupCodeHelpers
     [RuntimeExport("RhpFallbackFailFast")]
     internal static void RhpFallbackFailFast()
     {
+#if UEFI
         CoreLibManager.Panic("Fail fast called".ToCharPtrUnsafe());
+#else
+        CoreLibManager.Panic((byte*)"Fail fast called"u8);
+#endif
     }
 
     [RuntimeExport("RhpNewFast")]
@@ -57,7 +61,11 @@ internal unsafe class StartupCodeHelpers
     {
         if (numElements < 0)
         {
+#if UEFI
             CoreLibManager.Panic("RhpNewArray Bad numElements".ToCharPtrUnsafe());
+#else
+            CoreLibManager.Panic((byte*)"RhpNewArray Bad numElements"u8);
+#endif
         }
 
         MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
@@ -71,7 +79,11 @@ internal unsafe class StartupCodeHelpers
     {
         if (numElements < 0)
         {
+#if UEFI
             CoreLibManager.Panic("RhpNewArrayFast Bad numElements".ToCharPtrUnsafe());
+#else
+            CoreLibManager.Panic((byte*)"RhpNewArrayFast Bad numElements"u8);
+#endif
         }
 
         MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
@@ -85,7 +97,11 @@ internal unsafe class StartupCodeHelpers
     {
         if (numElements < 0)
         {
+#if UEFI
             CoreLibManager.Panic("RhpNewPtrArrayFast Bad numElements".ToCharPtrUnsafe());
+#else
+            CoreLibManager.Panic((byte*)"RhpNewPtrArrayFast Bad numElements"u8);
+#endif
         }
 
         MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
@@ -108,7 +124,11 @@ internal unsafe class StartupCodeHelpers
 
         if (elementType != obj.m_pEEType)
         {
+#if UEFI
             CoreLibManager.Panic("Assertion failed".ToCharPtrUnsafe()); /* covariance */
+#else
+            CoreLibManager.Panic((byte*)"Assertion failed"u8); /* covariance */
+#endif
         }
 
         element = obj;
@@ -157,7 +177,11 @@ internal unsafe class StartupCodeHelpers
     [RuntimeExport("RhpInitialDynamicInterfaceDispatch")]
     internal static void RhpInitialDynamicInterfaceDispatch()
     {
+#if UEFI
         CoreLibManager.Panic("RhpInitialDynamicInterfaceDispatch called".ToCharPtrUnsafe());
+#else
+        CoreLibManager.Panic((byte*)"RhpInitialDynamicInterfaceDispatch called"u8);
+#endif
     }
 
     [RuntimeExport("__security_cookie")]
@@ -181,25 +205,6 @@ internal unsafe class StartupCodeHelpers
     private static MethodTable** AllocObject(uint size)
     {
         MethodTable** result = (MethodTable**)CoreLibManager.Malloc(size);
-
-        // if (Environment.EfiSysTable == null)
-        // {
-        //     ThrowHelpers.ThrowNullReferenceException();
-        //     return null;
-        // }
-        //
-        // EfiStatus status =
-        //     Environment.EfiSysTable->BootServices->AllocatePool(EfiMemoryType.EfiLoaderData, size, (void**)&result);
-        // if (status != EfiStatus.Success)
-        // {
-        //     result = null;
-        // }
-        //
-        // if (result == null)
-        // {
-        //     Environment.FailFast("Allocation failed");
-        // }
-
         //zero out memory
         SpanHelpers.Fill(ref *(byte*)result, 0, size);
         return result;

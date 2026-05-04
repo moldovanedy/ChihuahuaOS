@@ -9,7 +9,7 @@
             <PublishFiles Include="$(PublishPath)**/*" />
         </ItemGroup>
 
-        <Message Importance="high" Text="Installing Bootloader to $(InstallDestination)..." />
+        <Message Importance="high" Text="Installing Bootloader to &quot;$(InstallDestination)&quot;..." />
 
         <MakeDir Directories="$(InstallDestination)" />
         <Copy SourceFiles="@(PublishFiles)" DestinationFolder="$(InstallDestination)" SkipUnchangedFiles="true" />

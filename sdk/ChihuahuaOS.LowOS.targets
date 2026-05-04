@@ -1,0 +1,59 @@
+<Project>
+    
+    <Target 
+        Name="CompileToNativeObject" 
+        AfterTargets="CopyFilesToOutputDirectory" 
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release'">
+        <PropertyGroup>
+            <ObjOutputPath>$(IntermediateOutputPath)$(TargetName).o</ObjOutputPath>
+            <PublishSubDir>$(OutputPath)publish/</PublishSubDir>
+            <IlcArgs>--targetos linux --targetarch x64 --systemmodule ChihuahuaOS.CoreLib --nativelib</IlcArgs>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <!-- we need to include all dlls from the output folder as references to ILC -->
+            <IlcReference Include="$(OutputPath)*.dll" />
+        </ItemGroup>
+
+        <RemoveDir Directories="$(PublishSubDir)" />
+        <MakeDir Directories="$(PublishSubDir)" />
+
+        <Message Importance="high" Text="Compiling $(OutputPath)$(TargetName).dll to $(ObjOutputPath) using ILC (with local references)..." />
+        <Exec 
+            Command="ilc -o &quot;$(ObjOutputPath)&quot; @(IlcReference->'&quot;%(Identity)&quot;', ' ') $(IlcArgs)" 
+            WorkingDirectory="$(ProjectDir)" />
+        <Copy DestinationFolder="$(PublishSubDir)" SourceFiles="$(ObjOutputPath)" />
+    </Target>
+
+    <Target 
+        Name="LinkExecutable" 
+        AfterTargets="CompileToNativeObject" 
+        Condition="('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release') and '$(OutputType)' == 'Exe'">
+        <PropertyGroup>
+            <AppFinalOutputPath>$(PublishSubDir)$(TargetName)</AppFinalOutputPath>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <!-- In the single-object mode, we only need the .o file of the current project -->
+            <LinkObjFiles Include="$(PublishSubDir)$(TargetName).o" />
+        </ItemGroup>
+        
+        <PropertyGroup>
+            <LldArgs>-z now -z relro -z noexecstack --hash-style=gnu --as-needed --discard-all --gc-sections --nostdlib --no-demangle</LldArgs>
+            <LldArgs>$(LldArgs) --defsym=main=$(EntryPointSymbol) -o&quot;$(AppFinalOutputPath)&quot; &quot;$(ObjOutputPath)&quot;</LldArgs>
+        </PropertyGroup>
+
+        <Message Importance="high" Text="Linking executable &quot;$(AppFinalOutputPath)&quot;..." />
+        <Exec Command="ld.lld $(LldArgs)" WorkingDirectory="$(ProjectDir)" />
+    </Target>
+    
+    <Target Name="CleanupIntermediates" AfterTargets="AfterCompile" Condition="'$(Configuration)' == 'Release'">
+        <ItemGroup>
+            <IntermediateFiles Include="@(IntemediateFilesGlob->'&quot;$(PublishSubDir)%(Identity)&quot;', ';')" />
+        </ItemGroup>
+
+        <Message Importance="high" Text="Deleting intermediate files in &quot;$(PublishSubDir)&quot;..." />
+        <Delete Files="@IntermediateFiles" />
+    </Target>
+    
+</Project>

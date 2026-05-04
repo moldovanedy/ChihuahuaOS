@@ -1,6 +1,10 @@
 <Project>
     
-    <Target Name="BflatBuild" AfterTargets="AfterBuild" Condition="'$(OutputType)' == 'Exe' and ('$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi')">
+    <Target 
+        Name="BflatBuild" 
+        AfterTargets="AfterBuild" 
+        Condition="'$(OutputType)' == 'Exe' and ('$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi')">
+        
         <Message Importance="high" Text="Starting bflat build for $(ProjectName)..." />
 
         <MSBuild Projects="@(ProjectReference)" Targets="GetBflatSourceFiles">
@@ -11,23 +15,29 @@
             <AllSourceFiles Include="@(Compile->'%(FullPath)')" />
             <AllSourceFiles Include="@(ReferencedSourceFiles)" />
             <!-- Filter out duplicate files and assembly attributes files -->
-            <DistinctSourceFiles Include="@(AllSourceFiles->Distinct())" Condition="!$([System.String]::new('%(FullPath)').Contains('AssemblyAttributes.cs'))" />
+            <DistinctSourceFiles 
+                Include="@(AllSourceFiles->Distinct())"
+                Condition="!$([System.String]::new('%(FullPath)').Contains('AssemblyAttributes.cs'))" />
+
+            <AllObjectFiles Include="$(OutputPath)*.o" />
         </ItemGroup>
         
         <PropertyGroup>
-            <PublishPath>$(OutputPath)publish/</PublishPath>
+            <PublishSubDir>$(OutputPath)publish/</PublishSubDir>
         </PropertyGroup>
 
         <MakeDir Directories="$(OutputPath)" />
-        <RemoveDir Directories="$(PublishPath)" />
-        <MakeDir Directories="$(PublishPath)" />
+        <RemoveDir Directories="$(PublishSubDir)" />
+        <MakeDir Directories="$(PublishSubDir)" />
 
         <PropertyGroup>
             <BflatDefines>$([System.Text.RegularExpressions.Regex]::Replace('$(DefineConstants)', ';', ' '))</BflatDefines>
             <BflatDefinesArgs>$([System.Text.RegularExpressions.Regex]::Replace('$(BflatDefines)', '([^ ]+)', '-d:$1'))</BflatDefinesArgs>
             
-            <BflatArgs>build @(DistinctSourceFiles, ' ') $(BflatDefinesArgs) --no-pie --separate-symbols --stdlib none --os uefi</BflatArgs>
-            <BflatArgs>$(BflatArgs) -o $(PublishPath)BOOTX64.EFI --verbose</BflatArgs>
+            <BflatArgs>build @(DistinctSourceFiles, ' ') $(BflatDefinesArgs)</BflatArgs>
+            <BflatArgs>$(BflatArgs) --no-pie --separate-symbols --stdlib none --os uefi</BflatArgs>
+            <BflatArgs>$(BflatArgs) --ldflags @(AllObjectFiles, ' ')</BflatArgs>
+            <BflatArgs>$(BflatArgs) -o $(PublishSubDir)BOOTX64.EFI --verbose</BflatArgs>
         </PropertyGroup>
 
         <Exec Command="$(BflatPath) $(BflatArgs)" />
@@ -42,6 +52,18 @@
             <AllSourceFiles Include="@(Compile->'%(FullPath)')" />
             <AllSourceFiles Include="@(ReferencedSourceFiles)" />
         </ItemGroup>
+    </Target>
+
+    <Target 
+        Name="CleanupIntermediates" 
+        AfterTargets="AfterCompile" 
+        Condition="'$(Configuration)' == 'Release' or '$(Configuration)' == 'ReleaseUefi'">
+        <ItemGroup>
+            <IntermediateFiles Include="@(IntemediateFilesGlob->'&quot;$(PublishSubDir)%(Identity)&quot;', ';')" />
+        </ItemGroup>
+
+        <Message Importance="high" Text="Deleting intermediate files in &quot;$(PublishSubDir)&quot;..." />
+        <Delete Files="@IntermediateFiles" />
     </Target>
 
 </Project>

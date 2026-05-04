@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using ChihuahuaOS.CoreLib.Extra.Runtime;
 
 namespace System;
 
@@ -59,5 +60,6 @@ public class ArrayEnumerator<T> : IEnumerator<T>
 
     public void Dispose()
     {
+        MemUtils.FreeMemory(this);
     }
 }

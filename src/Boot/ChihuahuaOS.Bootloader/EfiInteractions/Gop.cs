@@ -36,6 +36,36 @@ public static unsafe partial class Gop
         return new GopModeInfoEnumerator(gop);
     }
 
+    public static EfiGopMode? GetCurrentMode()
+    {
+        EfiGop* gop = GetOrFindGop();
+        if (gop == null)
+        {
+            return null;
+        }
+
+        return *gop->Mode;
+    }
+
+    public static EfiGopModeInformation? GetMode(uint modeNumber)
+    {
+        EfiGop* gop = GetOrFindGop();
+        if (gop == null || modeNumber >= gop->Mode->MaxMode)
+        {
+            return null;
+        }
+
+        ulong structSize = 0;
+        EfiGopModeInformation* info;
+        EfiStatus status = gop->QueryMode(gop, modeNumber, &structSize, &info);
+        if (status != EfiStatus.Success)
+        {
+            return null;
+        }
+
+        return *info;
+    }
+
     public static bool SetMode(uint modeNumber)
     {
         EfiGop* gop = GetOrFindGop();
