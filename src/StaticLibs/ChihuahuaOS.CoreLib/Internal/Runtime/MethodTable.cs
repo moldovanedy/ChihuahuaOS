@@ -7,7 +7,7 @@ internal unsafe struct MethodTable
 #pragma warning disable CS0169 // Field is never used
     // ReSharper disable InconsistentNaming
 
-    internal ushort _usComponentSize;
+    internal ushort UsComponentSize;
     private ushort _usFlags;
     internal uint _uBaseSize;
     internal MethodTable* _relatedType;

@@ -1,7 +1,7 @@
 using System;
 using ChihuahuaOS.CoreLib.Extra.Runtime;
 
-namespace ChihuahuaOS.Bootloader.SettingsManager;
+namespace ChihuahuaOS.MinimalUtils.Toml;
 
 public class TomlSetting : IDisposable
 {

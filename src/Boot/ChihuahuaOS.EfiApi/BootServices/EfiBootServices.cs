@@ -65,7 +65,7 @@ public readonly unsafe struct EfiBootServices
     private readonly IntPtr StartImage;
     private readonly IntPtr Exit;
     private readonly IntPtr UnloadImage;
-    private readonly IntPtr ExitBootServices;
+    public readonly delegate* unmanaged<IntPtr, ulong, EfiStatus> ExitBootServices;
 
     //
     // Misc functions

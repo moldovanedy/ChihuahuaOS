@@ -45,8 +45,7 @@ public abstract class Stream : IDisposable
 
     public void CopyTo(Stream destination)
     {
-        // ReSharper disable once IntroduceOptionalParameters.Global
-        CopyTo(destination, 8192);
+        CopyTo(destination, (int)destination.Length);
     }
 
     public virtual void CopyTo(Stream destination, int bufferSize)

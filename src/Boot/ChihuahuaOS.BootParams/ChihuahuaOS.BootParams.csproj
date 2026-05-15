@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="$(CustomSdkDir)ChihuahuaOS.CustomCoreLib.props" />
+
+    <PropertyGroup>
+        <Configurations>Debug;Release;DebugUefi;ReleaseUefi</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../../StaticLibs/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
+        <ProjectReference Include="../../StaticLibs/ChihuahuaOS.MinimalUtils/ChihuahuaOS.MinimalUtils.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -12,7 +12,7 @@
 
         <ItemGroup>
             <!-- we need to include all dlls from the output folder as references to ILC -->
-            <IlcReference Include="$(OutputPath)*.dll" />
+            <IlcReferences Include="$(OutputPath)*.dll" />
         </ItemGroup>
 
         <RemoveDir Directories="$(PublishSubDir)" />
@@ -20,7 +20,7 @@
 
         <Message Importance="high" Text="Compiling $(OutputPath)$(TargetName).dll to $(ObjOutputPath) using ILC (with local references)..." />
         <Exec 
-            Command="ilc -o &quot;$(ObjOutputPath)&quot; @(IlcReference->'&quot;%(Identity)&quot;', ' ') $(IlcArgs)" 
+            Command="ilc -o &quot;$(ObjOutputPath)&quot; @(IlcReferences->'&quot;%(Identity)&quot;', ' ') $(IlcArgs)" 
             WorkingDirectory="$(ProjectDir)" />
         <Copy DestinationFolder="$(PublishSubDir)" SourceFiles="$(ObjOutputPath)" />
     </Target>
@@ -36,11 +36,14 @@
         <ItemGroup>
             <!-- In the single-object mode, we only need the .o file of the current project -->
             <LinkObjFiles Include="$(PublishSubDir)$(TargetName).o" />
+            
+            <AllObjectFiles Include="$(OutputPath)*.o" />
         </ItemGroup>
         
         <PropertyGroup>
             <LldArgs>-z now -z relro -z noexecstack --hash-style=gnu --as-needed --discard-all --gc-sections --nostdlib --no-demangle</LldArgs>
-            <LldArgs>$(LldArgs) --defsym=main=$(EntryPointSymbol) -o&quot;$(AppFinalOutputPath)&quot; &quot;$(ObjOutputPath)&quot;</LldArgs>
+            <LldArgs>$(LldArgs) @(AllObjectFiles->'&quot;%(Identity)&quot;', ' ')</LldArgs>
+            <LldArgs>$(LldArgs) --defsym=main=$(EntryPointSymbol) -o &quot;$(AppFinalOutputPath)&quot; &quot;$(ObjOutputPath)&quot;</LldArgs>
         </PropertyGroup>
 
         <Message Importance="high" Text="Linking executable &quot;$(AppFinalOutputPath)&quot;..." />

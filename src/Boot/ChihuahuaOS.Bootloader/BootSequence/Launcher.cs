@@ -2,8 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using ChihuahuaOS.Bootloader.EfiInteractions;
-using ChihuahuaOS.Bootloader.SettingsManager;
+using ChihuahuaOS.BootParams;
+using ChihuahuaOS.EfiApi;
+using ChihuahuaOS.EfiApi.BootServices;
+using ChihuahuaOS.Elf;
+using ChihuahuaOS.Elf.FileHeader;
+using ChihuahuaOS.Elf.ProgramHeader;
+using ChihuahuaOS.Elf.SectionHeader;
 using ChihuahuaOS.MemPaginator;
+using ChihuahuaOS.MinimalUtils;
+using ChihuahuaOS.MinimalUtils.Toml;
 
 namespace ChihuahuaOS.Bootloader.BootSequence;
 
@@ -52,7 +60,7 @@ public static class Launcher
 
         if (success)
         {
-            Console.WriteLine("Successfully set the display resolution.");
+            Console.WriteLine("Set the display resolution.");
         }
         else
         {
@@ -76,15 +84,14 @@ public static class Launcher
         }
 
         MemMap.EfiMap efiMap = efiMapOpt.Value;
-        Console.WriteLine("Successfully retrieved the system memory map.");
+        Console.WriteLine("Retrieved the system memory map.");
 
-        success = MemMap.SetupPagingStructures(efiMap, out PagingManager? _);
-        //TEMP
+        success = MemMap.SetupPagingStructures(efiMap, out PagingManager? pagingManagerOpt);
         efiMap.Dispose();
 
-        if (success)
+        if (success && pagingManagerOpt != null)
         {
-            Console.WriteLine("Successfully setup paging structures.");
+            Console.WriteLine("Setup paging structures.");
         }
         else
         {
@@ -96,9 +103,94 @@ public static class Launcher
             return;
         }
 
-        //TODO: boot
+        PagingManager pagingManager = pagingManagerOpt.Value;
+        success = LoadKernelInMemory(pagingManager, out ulong kEntryPoint);
+        if (success)
+        {
+            Console.WriteLine("Loaded kernel in memory.");
+        }
+        else
+        {
+            Fail();
+            return;
+        }
 
-        Fail();
+        success = AllocateKernelStackMemory(pagingManager);
+        if (success)
+        {
+            Console.WriteLine("Allocated stack memory for the kernel.");
+        }
+        else
+        {
+            Fail();
+            return;
+        }
+
+        success = Gop.Remap(pagingManager);
+        if (success)
+        {
+            Console.WriteLine("Remapped the framebuffer for use in OS.");
+        }
+        else
+        {
+            Fail();
+            return;
+        }
+
+        unsafe
+        {
+            if (Environment.EfiSysTable == null)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("FATAL ERROR: Assertion failed: EFI system table is null");
+                Console.ForegroundColor = ConsoleColor.White;
+                Fail();
+                return;
+            }
+
+            if (Environment.EfiImageHandle == 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("FATAL ERROR: Assertion failed: EFI image handle is null");
+                Console.ForegroundColor = ConsoleColor.White;
+                Fail();
+                return;
+            }
+
+            Console.WriteLine("Exiting boot services and jumping to kernel...");
+            success = MemMap.GetMemoryMapDirect(
+                out EfiMemoryDescriptor* _,
+                out ulong _,
+                out ulong mapKey,
+                out ulong _,
+                out uint _);
+            if (!success)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("FATAL ERROR: Could not get the final EFI memory map!");
+                Console.ForegroundColor = ConsoleColor.White;
+                Fail();
+                return;
+            }
+
+            //NOTE: it's very important to not execute anything between the final memory map retrieval
+            // and ExitBootServices, as it might invalidate the map and fail to exit boot services
+
+            //NOTE: this is the point of no return: once we call ExitBootServices, no matter the outcome, we can't
+            // return from this function, as the firmware might have already shutdown most of its services
+
+            EfiStatus status = Environment.EfiSysTable->BootServices->ExitBootServices(
+                Environment.EfiImageHandle, mapKey);
+            if (status != EfiStatus.Success)
+            {
+                SpinLocks.HaltingInfiniteLoop();
+            }
+
+            SetupAndJumpToKernel.Call(pagingManager.GetRootPageTablePhysicalAddress(), kEntryPoint);
+
+            //NOTE: this is unreachable
+            SpinLocks.HaltingInfiniteLoop();
+        }
     }
 
     private static void Fail()
@@ -111,7 +203,8 @@ public static class Launcher
 
     private static bool LoadKernelSettings()
     {
-        using string settingsFilePath = "\\EFI\\BOOT\\ChiOS_" + BootedOsVersion + ".CFG";
+        using string osVersion = BootedOsVersion.ToString();
+        using string settingsFilePath = "\\EFI\\BOOT\\ChiOS_" + osVersion + ".CFG";
         using FileStream? fs = File.OpenRead(settingsFilePath);
         if (fs == null)
         {
@@ -121,6 +214,184 @@ public static class Launcher
         List<TomlSetting> settings = TomlManager.ReadFromStream(fs, KernelSettings.NUM_SETTINGS);
         KSettings = KernelSettings.FromConfigList(settings);
         settings.Dispose();
+        return true;
+    }
+
+    private static bool LoadKernelInMemory(PagingManager pgManager, out ulong kernelEntryPoint)
+    {
+        kernelEntryPoint = 0;
+        using string osVersion = BootedOsVersion.ToString();
+        using string kernelFilePath = "\\EFI\\BOOT\\ChihuahuaOS.Kernel." + osVersion + ".elf";
+        using FileStream? fs = File.OpenRead(kernelFilePath);
+        if (fs == null)
+        {
+            return false;
+        }
+
+        using ElfLoader elfLoader = new(fs);
+        ElfLoader.SegmentMemoryAllocator allocator = (ulong size, ulong address, ElfSegmentFlags flags) =>
+        {
+            unsafe
+            {
+                if (Environment.EfiSysTable == null)
+                {
+                    return 0;
+                }
+
+                EfiBootServices* bs = Environment.EfiSysTable->BootServices;
+                ulong physicalAddress = 0;
+                ulong pageCount = (size + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
+
+                EfiStatus status = bs->AllocatePages(
+                    EfiAllocateType.AllocateAnyPages,
+                    EfiMemoryType.EfiLoaderData,
+                    pageCount,
+                    &physicalAddress);
+                if (status != EfiStatus.Success)
+                {
+                    return 0;
+                }
+
+                var pageFlags = PageFlags.Present;
+                if ((flags & ElfSegmentFlags.Readable) != ElfSegmentFlags.None)
+                {
+                    pageFlags |= PageFlags.ReadPermission;
+                }
+
+                if ((flags & ElfSegmentFlags.Writable) != ElfSegmentFlags.None)
+                {
+                    pageFlags |= PageFlags.WritePermission;
+                }
+
+                if ((flags & ElfSegmentFlags.Executable) != ElfSegmentFlags.None)
+                {
+                    pageFlags |= PageFlags.ExecutePermission;
+                }
+
+                for (ulong i = 0; i < pageCount; i++)
+                {
+                    PageError pageError = pgManager.MapPage(
+                        physicalAddress + EfiConstants.EFI_PAGE_SIZE * i,
+                        address + EfiConstants.EFI_PAGE_SIZE * i,
+                        pageFlags);
+                    if (pageError != PageError.Success)
+                    {
+                        return 0;
+                    }
+                }
+
+                return physicalAddress;
+            }
+        };
+
+        ElfHeader? elfHeaderOpt = elfLoader.GetElfHeader(out ElfError error);
+        if (error != ElfError.Success || elfHeaderOpt == null)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            using string errString = ((int)error).ToString();
+            Console.WriteLine(
+                "FATAL ERROR: Could not read kernel executable ELF header! Error code: " + errString);
+            Console.ForegroundColor = ConsoleColor.White;
+            return false;
+        }
+
+        kernelEntryPoint = elfHeaderOpt.Value.EntryPoint;
+
+        ElfProgramHeader[]? progHeaders = null;
+        ElfSectionHeader[]? sectionHeaders = null;
+        try
+        {
+            progHeaders = elfLoader.GetProgramHeaders(out error);
+            if (error != ElfError.Success || progHeaders == null)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                using string errString = ((int)error).ToString();
+                Console.WriteLine(
+                    "FATAL ERROR: Could not read kernel executable program headers! Error code: " + errString);
+                Console.ForegroundColor = ConsoleColor.White;
+                return false;
+            }
+
+            for (int i = 0; i < progHeaders.Length; i++)
+            {
+                elfLoader.LoadExecutableSegment(ref progHeaders[i], allocator);
+            }
+
+            sectionHeaders = elfLoader.GetSectionHeaders(out error);
+            if (error != ElfError.Success || sectionHeaders == null)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                using string errString = ((int)error).ToString();
+                Console.WriteLine(
+                    "FATAL ERROR: Could not read kernel executable section headers! Error code: " + errString);
+                Console.ForegroundColor = ConsoleColor.White;
+                return false;
+            }
+
+            for (int i = 0; i < sectionHeaders.Length; i++)
+            {
+                elfLoader.LoadSection(ref sectionHeaders[i], allocator);
+            }
+
+            return true;
+        }
+        finally
+        {
+            progHeaders?.Dispose();
+            sectionHeaders?.Dispose();
+        }
+    }
+
+    private static unsafe bool AllocateKernelStackMemory(PagingManager pgManager)
+    {
+        const PageFlags KSTACK_PAGE_FLAGS = PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission;
+        const ulong KSTACK_SIZE = KVirtualAddresses.KERNEL_STACK_TOP - KVirtualAddresses.KERNEL_STACK_BOTTOM;
+        const ulong PAGE_COUNT = (KSTACK_SIZE + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
+
+        if (Environment.EfiSysTable == null)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(
+                "FATAL ERROR: Assertion failed: EFI system table null in Kernel stack allocation");
+            Console.ForegroundColor = ConsoleColor.White;
+            return false;
+        }
+
+        EfiBootServices* bs = Environment.EfiSysTable->BootServices;
+        ulong physicalAddress = 0;
+
+        EfiStatus status = bs->AllocatePages(
+            EfiAllocateType.AllocateAnyPages,
+            EfiMemoryType.EfiLoaderData,
+            PAGE_COUNT,
+            &physicalAddress);
+        if (status != EfiStatus.Success)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            using string err = ((int)status).ToString();
+            Console.WriteLine(
+                "FATAL ERROR: Kernel stack allocation: failed to allocate memory; error code:" + err);
+            Console.ForegroundColor = ConsoleColor.White;
+            return false;
+        }
+
+        for (ulong i = 0; i < PAGE_COUNT; i++)
+        {
+            PageError pageError = pgManager.MapPage(
+                physicalAddress + EfiConstants.EFI_PAGE_SIZE * i,
+                KVirtualAddresses.KERNEL_STACK_BOTTOM + EfiConstants.EFI_PAGE_SIZE * i,
+                KSTACK_PAGE_FLAGS);
+            if (pageError != PageError.Success)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                using string err = ((int)pageError).ToString();
+                Console.WriteLine(
+                    "FATAL ERROR: Kernel stack allocation: could not map a page; error code: " + err);
+                Console.ForegroundColor = ConsoleColor.White;
+                return false;
+            }
+        }
+
         return true;
     }
 }

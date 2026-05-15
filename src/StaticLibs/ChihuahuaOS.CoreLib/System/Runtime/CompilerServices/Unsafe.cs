@@ -72,6 +72,10 @@ public static unsafe class Unsafe
 
     [Intrinsic]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static extern T ReadUnaligned<T>(void* source);
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static extern TTo BitCast<TFrom, TTo>(TFrom source)
         where TFrom : allows ref struct
         where TTo : allows ref struct;
@@ -80,4 +84,12 @@ public static unsafe class Unsafe
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static extern ref T AddByteOffset<T>(ref T source, nuint byteOffset)
         where T : allows ref struct;
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static extern void CopyBlock(void* destination, void* source, uint byteCount);
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static extern void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount);
 }

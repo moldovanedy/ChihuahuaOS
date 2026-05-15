@@ -155,9 +155,7 @@ public static partial class MemMap
         {
             EfiMemoryDescriptor entry = memMap[i];
             bool needsIdentityMapping =
-                entry.Type != EfiMemoryType.EfiLoaderCode
-                && entry.Type != EfiMemoryType.EfiLoaderData
-                && entry.Type != EfiMemoryType.EfiBootServicesCode
+                entry.Type != EfiMemoryType.EfiBootServicesCode
                 && entry.Type != EfiMemoryType.EfiBootServicesData
                 && entry.Type != EfiMemoryType.EfiConventionalMemory;
 

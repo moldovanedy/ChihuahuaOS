@@ -36,7 +36,7 @@
             
             <BflatArgs>build @(DistinctSourceFiles, ' ') $(BflatDefinesArgs)</BflatArgs>
             <BflatArgs>$(BflatArgs) --no-pie --separate-symbols --stdlib none --os uefi</BflatArgs>
-            <BflatArgs>$(BflatArgs) --ldflags @(AllObjectFiles, ' ')</BflatArgs>
+            <BflatArgs>$(BflatArgs) --ldflags @(AllObjectFiles->'&quot;%(Identity)&quot;', ' --ldflags ')</BflatArgs>
             <BflatArgs>$(BflatArgs) -o $(PublishSubDir)BOOTX64.EFI --verbose</BflatArgs>
         </PropertyGroup>
 

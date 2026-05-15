@@ -1,10 +1,9 @@
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace ChihuahuaOS.Elf.FileHeader;
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct ElfHeader
 {
     public const int ELF_IDENTIFIER_SIZE = 16;
@@ -16,11 +15,30 @@ public readonly struct ElfHeader
     public const byte ELF_MAGIC3 = (byte)'F';
 
 
-    /// <summary>
-    /// Identifiers like architecture, endianness, version, etc. See <see cref="HeaderIdentifierIndex"/> for the array
-    /// indexers to use.
-    /// </summary>
-    public readonly ElfHeaderIdentifier Identifiers;
+    public readonly byte MagicByte0;
+
+    public readonly byte MagicByte1;
+
+    public readonly byte MagicByte2;
+
+    public readonly byte MagicByte3;
+
+    public readonly byte Class;
+
+    public readonly byte Data;
+
+    public readonly byte HeaderVersion;
+
+    public readonly byte OsAbi;
+
+    public readonly byte AbiVersion;
+
+    public readonly int Padding1;
+
+    public readonly short Padding2;
+
+    public readonly byte Padding3;
+
 
     /// <summary>
     /// File type; see <see cref="ElfAppType"/> for more info.
@@ -118,10 +136,4 @@ public readonly struct ElfHeader
             buffer.Dispose();
         }
     }
-}
-
-[InlineArray(ElfHeader.ELF_IDENTIFIER_SIZE)]
-public struct ElfHeaderIdentifier
-{
-    private byte _value;
 }

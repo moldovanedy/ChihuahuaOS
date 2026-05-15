@@ -100,19 +100,13 @@ public abstract class Array : IDisposable
         Copy(sourceArray, intSourceIndex, destinationArray, intDestinationIndex, intLength);
     }
 
-    public static unsafe void Copy(
+    public static void Copy(
         Array sourceArray,
         int sourceIndex,
         Array destinationArray,
         int destinationIndex,
         int length)
     {
-        if (sourceArray.Length != destinationArray.Length)
-        {
-            ThrowHelpers.ThrowArgumentException();
-            return;
-        }
-
         for (int i = 0; i < length; i++)
         {
             destinationArray[destinationIndex + i] = sourceArray[sourceIndex + i];
@@ -133,7 +127,7 @@ public abstract class Array : IDisposable
     public static unsafe void Clear(Array sourceArray)
     {
         MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(sourceArray);
-        nuint elementSize = pMethodTable->_usComponentSize;
+        nuint elementSize = pMethodTable->UsComponentSize;
         nuint byteCount = (uint)sourceArray.Length * elementSize;
 
         SpanHelpers.Fill(ref Unsafe.As<RawArrayData>(sourceArray).Data, 0, byteCount);
@@ -142,7 +136,7 @@ public abstract class Array : IDisposable
     public static unsafe void Clear(Array sourceArray, int index, int length)
     {
         MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(sourceArray);
-        nuint elementSize = pMethodTable->_usComponentSize;
+        nuint elementSize = pMethodTable->UsComponentSize;
         nuint byteCount = (uint)length * elementSize;
 
         SpanHelpers.Fill(
@@ -181,6 +175,7 @@ public abstract class Array : IDisposable
 
     public unsafe object this[int index]
     {
+        [Intrinsic]
         get
         {
             if (index < 0 || index >= Length)
@@ -189,7 +184,7 @@ public abstract class Array : IDisposable
             }
 
             MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
-            nuint elementSize = pMethodTable->_usComponentSize;
+            nuint elementSize = pMethodTable->UsComponentSize;
 
             byte elemStart = Unsafe.AddByteOffset(
                 ref Unsafe.As<RawArrayData>(this).Data,
@@ -197,6 +192,7 @@ public abstract class Array : IDisposable
             nint address = (nint)(&elemStart);
             return Unsafe.As<nint, object>(ref address);
         }
+        [Intrinsic]
         set
         {
             if (index < 0 || index >= Length)
@@ -205,7 +201,7 @@ public abstract class Array : IDisposable
             }
 
             MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
-            nuint elementSize = pMethodTable->_usComponentSize;
+            nuint elementSize = pMethodTable->UsComponentSize;
 
             byte elemStart = Unsafe.AddByteOffset(
                 ref Unsafe.As<RawArrayData>(this).Data,

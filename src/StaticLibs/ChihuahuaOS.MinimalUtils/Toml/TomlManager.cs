@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace ChihuahuaOS.Bootloader.SettingsManager;
+namespace ChihuahuaOS.MinimalUtils.Toml;
 
 //DISCLAIMER!!! This is not a complete TOML 0.1 parser, as it doesn't support arrays, it only works with ASCII,
 // and it might not work properly in different edge cases

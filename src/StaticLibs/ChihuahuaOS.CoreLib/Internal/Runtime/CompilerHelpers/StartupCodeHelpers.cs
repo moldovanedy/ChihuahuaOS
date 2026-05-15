@@ -68,7 +68,7 @@ internal unsafe class StartupCodeHelpers
 #endif
         }
 
-        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
+        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->UsComponentSize));
         *result = pMt;
         *(int*)(result + 1) = numElements;
         return result;
@@ -86,7 +86,7 @@ internal unsafe class StartupCodeHelpers
 #endif
         }
 
-        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
+        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->UsComponentSize));
         *result = pMt;
         *(int*)(result + 1) = numElements;
         return result;
@@ -104,7 +104,7 @@ internal unsafe class StartupCodeHelpers
 #endif
         }
 
-        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->_usComponentSize));
+        MethodTable** result = AllocObject((uint)(pMt->_uBaseSize + numElements * pMt->UsComponentSize));
         *result = pMt;
         *(int*)(result + 1) = numElements;
         return result;

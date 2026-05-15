@@ -9,10 +9,12 @@ public partial class SharedPtr<T> : IDisposable where T : IDisposable
 
     private T _value;
     private int _numReferences;
+    private readonly Window _selfReference;
 
     public SharedPtr(T value)
     {
         _value = value;
+        _selfReference = Get();
     }
 
     public Window Get()
@@ -21,11 +23,12 @@ public partial class SharedPtr<T> : IDisposable where T : IDisposable
     }
 
     /// <summary>
-    /// NOTE: this only works if the value is already disposed (<see cref="IsValueDisposed"/>), otherwise will do
-    /// nothing.
+    /// NOTE: this only works if there are no more active <see cref="Window"/> instances.
     /// </summary>
     public void Dispose()
     {
+        _selfReference.Dispose();
+
         if (IsValueDisposed)
         {
             MemUtils.FreeMemory(this);

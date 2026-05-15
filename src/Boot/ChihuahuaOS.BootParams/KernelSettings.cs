@@ -1,8 +1,7 @@
 using System.Collections.Generic;
+using ChihuahuaOS.MinimalUtils.Toml;
 
-namespace ChihuahuaOS.Bootloader.SettingsManager;
-
-//TODO: move this to a shared project
+namespace ChihuahuaOS.BootParams;
 
 public struct KernelSettings
 {

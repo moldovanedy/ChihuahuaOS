@@ -1,6 +1,8 @@
 using System;
+using ChihuahuaOS.BootParams;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.ConsoleSupport;
+using ChihuahuaOS.MemPaginator;
 
 namespace ChihuahuaOS.Bootloader.EfiInteractions;
 
@@ -13,6 +15,35 @@ public static unsafe partial class Gop
     /// Do not use directly! Use <see cref="GetOrFindGop"/> instead.
     /// </summary>
     private static EfiGop* _gop;
+
+    public static bool Remap(PagingManager pagingManager)
+    {
+        EfiGop* gop = GetOrFindGop();
+        if (gop == null)
+        {
+            return false;
+        }
+
+        ulong oldBase = (ulong)gop->Mode->FrameBufferBase;
+        ulong pageCount = (gop->Mode->FrameBufferSize + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
+        for (ulong i = 0; i < pageCount; i++)
+        {
+            PageError error = pagingManager.MapPage(
+                oldBase + i * EfiConstants.EFI_PAGE_SIZE,
+                KVirtualAddresses.GOP_BASE + i * EfiConstants.EFI_PAGE_SIZE,
+                PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
+
+            if (error != PageError.Success)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("FATAL ERROR: Could not remap the framebuffer for use in OS!");
+                Console.ForegroundColor = ConsoleColor.White;
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     public static int GetModeCount()
     {

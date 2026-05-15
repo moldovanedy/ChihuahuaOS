@@ -15,6 +15,11 @@ public partial class SharedPtr<T>
             _parentPtr._numReferences++;
         }
 
+        public T GetValue()
+        {
+            return _parentPtr._value;
+        }
+
         /// <summary>
         /// Creates a new window from the main one (another reference).
         /// </summary>

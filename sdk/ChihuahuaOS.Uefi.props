@@ -3,6 +3,9 @@
     <PropertyGroup Condition="'$(Configuration)' == 'DebugUefi' or '$(Configuration)' == 'ReleaseUefi'">
         <DefineConstants>$(DefineConstants);UEFI</DefineConstants>
         <RuntimeOS>uefi</RuntimeOS>
+        
+        <!-- since we use BFlat here, we need to always run the compilation, so we force it to always run the BflatBuild target -->
+        <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
     </PropertyGroup>
     
 </Project>

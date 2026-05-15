@@ -1,4 +1,4 @@
-namespace ChihuahuaOS.Bootloader.SettingsManager;
+namespace ChihuahuaOS.MinimalUtils.Toml;
 
 public enum TomlType
 {

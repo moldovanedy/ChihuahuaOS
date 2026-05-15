@@ -25,6 +25,7 @@ public readonly unsafe struct PagingManager
 #endif
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public PageError MapPage(ulong physicalAddress, ulong virtualAddress, PageFlags flags)
     {
 #if ARCH_X64
@@ -33,6 +34,17 @@ public readonly unsafe struct PagingManager
         return PageError.UnknownError;
 #endif
     }
+
+#if DEBUG
+    public ulong DebugTestPaging(ulong virtualAddress)
+    {
+#if ARCH_X64
+        return _x64Paging.DebugTestPaging(virtualAddress);
+#else
+        return 0;
+#endif
+    }
+#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public PageError IdentityMapPage(ulong address, PageFlags flags)
@@ -57,6 +69,17 @@ public readonly unsafe struct PagingManager
 #endif
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ulong GetRootPageTablePhysicalAddress()
+    {
+#if ARCH_X64
+        return _x64Paging.GetRootPageTablePhysicalAddress();
+#else
+        return 0;
+#endif
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong VirtualToPhysical(ulong virtualAddress)
     {
 #if ARCH_X64
@@ -66,6 +89,7 @@ public readonly unsafe struct PagingManager
 #endif
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong PhysicalToVirtual(ulong physicalAddress)
     {
 #if ARCH_X64

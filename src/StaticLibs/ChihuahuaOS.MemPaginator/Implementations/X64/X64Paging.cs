@@ -26,6 +26,45 @@ public readonly unsafe struct X64Paging : IPagingImplementation
         _frameAllocator = frameAllocator;
     }
 
+#if DEBUG
+    /// <summary>
+    /// A small test to determine whether the mapping is correct. Will return the entry for the given virtual address,
+    /// being formed from the physical address and flags.
+    /// </summary>
+    /// <param name="virtualAddress"></param>
+    /// <returns></returns>
+    public ulong DebugTestPaging(ulong virtualAddress)
+    {
+        ulong l4Idx = (virtualAddress >> P4_SHIFT) & INDEX_MASK;
+        ulong l3Idx = (virtualAddress >> P3_SHIFT) & INDEX_MASK;
+        ulong l2Idx = (virtualAddress >> P2_SHIFT) & INDEX_MASK;
+        ulong l1Idx = (virtualAddress >> P1_SHIFT) & INDEX_MASK;
+
+        ulong entryForL3 = _rootPageTable->Entries[l4Idx];
+        if (entryForL3 == 0)
+        {
+            return 0;
+        }
+
+        PageTable* l3Table = GetPageTableFromPhysicalAddress(entryForL3 & PHYSICAL_ADDRESS_MASK, false);
+        ulong entryForL2 = l3Table->Entries[l3Idx];
+        if (entryForL2 == 0)
+        {
+            return 0;
+        }
+
+        PageTable* l2Table = GetPageTableFromPhysicalAddress(entryForL2 & PHYSICAL_ADDRESS_MASK, false);
+        ulong entryForL1 = l2Table->Entries[l2Idx];
+        if (entryForL1 == 0)
+        {
+            return 0;
+        }
+
+        PageTable* l1Table = GetPageTableFromPhysicalAddress(entryForL1 & PHYSICAL_ADDRESS_MASK, false);
+        return l1Table->Entries[l1Idx];
+    }
+#endif
+
     public PageError MapPage(ulong physicalAddress, ulong virtualAddress, PageFlags flags)
     {
         const PageFlags NON_TERMINAL_PAGE_TABLE_FLAGS =
@@ -129,6 +168,11 @@ public readonly unsafe struct X64Paging : IPagingImplementation
     {
         X64PagingSubmit.SubmitPageTable((ulong)_rootPageTable);
         return PageError.Success;
+    }
+
+    public ulong GetRootPageTablePhysicalAddress()
+    {
+        return (ulong)_rootPageTable;
     }
 
     public ulong VirtualToPhysical(ulong virtualAddress)

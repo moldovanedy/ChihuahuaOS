@@ -26,7 +26,7 @@
         <!-- compile ASM for regular ChihuahuaOS -->
         <Exec
             Command="nasm -f elf64 %(AsmFiles.Identity) -o $(OutputPath)%(AsmFiles.Filename).o"
-            Condition="'@(AsmFiles)' != '' and '$(Configuration)' != 'DebugUefi' and '$(Configuration)' != 'ReleaseUefi'" />
+            Condition="'@(AsmFiles)' != '' and ('$(Configuration)' != 'DebugUefi' and '$(Configuration)' != 'ReleaseUefi')" />
 
         <!-- always copy all the compiled object files to the project's output dir -->
         <ItemGroup Condition="'@(AsmFiles)' != ''">

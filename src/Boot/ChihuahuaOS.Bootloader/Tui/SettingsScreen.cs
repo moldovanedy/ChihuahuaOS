@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using ChihuahuaOS.Bootloader.SettingsManager;
 using ChihuahuaOS.Bootloader.Tui.ValueSetters;
+using ChihuahuaOS.BootParams;
+using ChihuahuaOS.MinimalUtils.Toml;
 
 namespace ChihuahuaOS.Bootloader.Tui;
 

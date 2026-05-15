@@ -36,7 +36,7 @@ internal static class Program
     {
         //disable the watchdog; we only need it after we try to boot
         systemTable->BootServices->SetWatchdogTimer(0, 0, 0, null);
-        Environment.SetEfiSystemTableReference(systemTable);
+        Environment.SetEfiSystemReferences(imageHandle, systemTable);
 
         CoreLibManager.Panic = &PanicHandler;
         CoreLibManager.PrimitiveDebug = &PrimitiveDebugHandler;
@@ -80,7 +80,7 @@ internal static class Program
         while (true)
         {
         }
-        
+
         // ReSharper disable once FunctionNeverReturns
     }
 

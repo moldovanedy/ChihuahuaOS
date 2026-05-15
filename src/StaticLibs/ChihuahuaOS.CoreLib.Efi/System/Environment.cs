@@ -7,6 +7,8 @@ namespace System;
 
 public static unsafe class Environment
 {
+    public static IntPtr EfiImageHandle { get; private set; } = IntPtr.Zero;
+
     public static EfiSystemTable* EfiSysTable { get; private set; } = null;
 
     [DoesNotReturn]
@@ -15,19 +17,17 @@ public static unsafe class Environment
         CoreLibManager.Panic(message.ToCharPtrUnsafe());
     }
 
-    #region EFI specific
-
     /// <summary>
-    /// This is only used on EFI platforms. Sets the pointer to the EFI system table, used by most services.
-    /// Call this as soon as the program starts.
+    /// This is only used on EFI platforms. Sets the pointer to the EFI system table, used by most services, as well
+    /// as the image handle. Call this as soon as the program starts.
     /// </summary>
     /// <param name="systemTable"></param>
-    public static void SetEfiSystemTableReference(EfiSystemTable* systemTable)
+    /// <param name="imageHandle"></param>
+    public static void SetEfiSystemReferences(IntPtr imageHandle, EfiSystemTable* systemTable)
     {
+        EfiImageHandle = imageHandle;
         EfiSysTable = systemTable;
     }
-
-    #endregion
 }
 
 #endif

@@ -8,6 +8,8 @@ internal interface IPagingImplementation
 
     PageError SubmitChanges();
 
+    ulong GetRootPageTablePhysicalAddress();
+
     ulong VirtualToPhysical(ulong virtualAddress);
 
     ulong PhysicalToVirtual(ulong physicalAddress);

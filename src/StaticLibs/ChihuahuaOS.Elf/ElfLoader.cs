@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using ChihuahuaOS.CoreLib;
 using ChihuahuaOS.CoreLib.Extra.Runtime;
 using ChihuahuaOS.Elf.FileHeader;
 using ChihuahuaOS.Elf.ProgramHeader;
@@ -19,7 +20,7 @@ public class ElfLoader : IDisposable
     public delegate ulong SegmentMemoryAllocator(ulong memSize, ulong virtualAddress, ElfSegmentFlags flags);
 
 
-    private readonly Stream _stream;
+    private Stream _stream;
 
     public ElfLoader(Stream stream)
     {
@@ -28,26 +29,48 @@ public class ElfLoader : IDisposable
 
     public void Dispose()
     {
-        _stream.Dispose();
+        _stream = null!;
         MemUtils.FreeMemory(this);
+    }
+
+    public ElfHeader? GetElfHeader(out ElfError error)
+    {
+        long previousStreamPosition = _stream.Position;
+
+        try
+        {
+            _stream.Position = 0;
+            ElfHeader? headerOpt = ElfHeader.ParseHeader(_stream);
+            if (headerOpt == null)
+            {
+                error = ElfError.ElfFileHeaderCorrupted;
+                return null;
+            }
+
+            ElfHeader header = headerOpt.Value;
+            error = CheckElfHeader(ref header);
+            if (error != ElfError.Success)
+            {
+                return null;
+            }
+
+            return header;
+        }
+        finally
+        {
+            _stream.Position = previousStreamPosition;
+        }
     }
 
     public ElfProgramHeader[]? GetProgramHeaders(out ElfError error)
     {
-        _stream.Position = 0;
-        ElfHeader? headerOpt = ElfHeader.ParseHeader(_stream);
-        if (headerOpt == null)
+        ElfHeader? headerOpt = GetElfHeader(out error);
+        if (error != ElfError.Success || headerOpt == null)
         {
-            error = ElfError.ElfFileHeaderCorrupted;
             return null;
         }
 
         ElfHeader header = headerOpt.Value;
-        error = CheckElfHeader(ref header);
-        if (error != ElfError.Success)
-        {
-            return null;
-        }
 
         //it shouldn't be different, but you never know...
         if (header.ProgHeaderEntrySize != ElfProgramHeader.FILE_HEADER_SIZE)
@@ -61,7 +84,7 @@ public class ElfLoader : IDisposable
         ElfProgramHeader[] programHeaders = new ElfProgramHeader[numEntries];
 
         ulong endPosition = header.ProgHeaderOffset + (ulong)arraySizeBytes;
-        if (endPosition >= (ulong)_stream.Length)
+        if (endPosition > (ulong)_stream.Length)
         {
             error = ElfError.SizeExceeded;
             programHeaders.Dispose();
@@ -87,20 +110,13 @@ public class ElfLoader : IDisposable
 
     public ElfSectionHeader[]? GetSectionHeaders(out ElfError error)
     {
-        _stream.Position = 0;
-        ElfHeader? headerOpt = ElfHeader.ParseHeader(_stream);
-        if (headerOpt == null)
+        ElfHeader? headerOpt = GetElfHeader(out error);
+        if (error != ElfError.Success || headerOpt == null)
         {
-            error = ElfError.ElfFileHeaderCorrupted;
             return null;
         }
 
         ElfHeader header = headerOpt.Value;
-        error = CheckElfHeader(ref header);
-        if (error != ElfError.Success)
-        {
-            return null;
-        }
 
         //it shouldn't be different, but you never know...
         if (header.SectionHeaderEntrySize != ElfSectionHeader.FILE_HEADER_SIZE)
@@ -114,8 +130,15 @@ public class ElfLoader : IDisposable
         ElfSectionHeader[] sectionHeaders = new ElfSectionHeader[numEntries];
 
         ulong endPosition = header.SectionHeaderOffset + (ulong)arraySizeBytes;
-        if (endPosition >= (ulong)_stream.Length)
+        if (endPosition > (ulong)_stream.Length)
         {
+            unsafe
+            {
+                CoreLibManager.PrimitiveDebug(
+                    numEntries.ToString()
+                        .ToCharPtrUnsafe());
+            }
+
             error = ElfError.SizeExceeded;
             sectionHeaders.Dispose();
             return null;
@@ -168,13 +191,13 @@ public class ElfLoader : IDisposable
     public static ElfError CheckElfHeader(ref ElfHeader header)
     {
         if (
-            header.Identifiers[(int)HeaderIdentifierIndex.Magic0] != ElfHeader.ELF_MAGIC0
-            || header.Identifiers[(int)HeaderIdentifierIndex.Magic1] != ElfHeader.ELF_MAGIC1
-            || header.Identifiers[(int)HeaderIdentifierIndex.Magic2] != ElfHeader.ELF_MAGIC2
-            || header.Identifiers[(int)HeaderIdentifierIndex.Magic3] != ElfHeader.ELF_MAGIC3
-            || header.Identifiers[(int)HeaderIdentifierIndex.Data] != 1
-            || header.Identifiers[(int)HeaderIdentifierIndex.Class] != 2
-            || header.Identifiers[(int)HeaderIdentifierIndex.Version] != 1
+            header.MagicByte0 != ElfHeader.ELF_MAGIC0
+            || header.MagicByte1 != ElfHeader.ELF_MAGIC1
+            || header.MagicByte2 != ElfHeader.ELF_MAGIC2
+            || header.MagicByte3 != ElfHeader.ELF_MAGIC3
+            || header.Data != 1
+            || header.Class != 2
+            || header.HeaderVersion != 1
             || header.Version != 1
             || header.ThisSize != ElfHeader.FILE_HEADER_SIZE)
         {
@@ -183,7 +206,7 @@ public class ElfLoader : IDisposable
 
 #if ARCH_X64
         // ReSharper disable once ConvertIfStatementToReturnStatement
-        if (header.Machine == ElfMachineType.X64)
+        if (header.Machine != ElfMachineType.X64)
         {
             return ElfError.ElfTypeNotSupported;
         }
