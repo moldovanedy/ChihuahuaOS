@@ -75,7 +75,7 @@ public static partial class MemMap
                 return false;
             }
 
-            RawMemory.MemSet((void*)physAddress, 0, numPages);
+            RawMemory.MemSet((void*)physAddress, 0, numPages * EfiConstants.EFI_PAGE_SIZE);
             outRawMemMap = (EfiMemoryDescriptor*)physAddress;
 
             status = bs->GetMemoryMap(
@@ -155,17 +155,15 @@ public static partial class MemMap
         {
             EfiMemoryDescriptor entry = memMap[i];
             bool needsIdentityMapping =
-                entry.Type != EfiMemoryType.EfiBootServicesCode
-                && entry.Type != EfiMemoryType.EfiBootServicesData
-                && entry.Type != EfiMemoryType.EfiConventionalMemory;
+                entry.Type != EfiMemoryType.EfiConventionalMemory
+                && entry.Type != EfiMemoryType.EfiUnusableMemory;
 
             for (ulong j = 0; j < entry.NumberOfPages; j++)
             {
                 const PageFlags USED_PAGE_FLAGS =
                     PageFlags.Present
                     | PageFlags.ReadPermission
-                    | PageFlags.WritePermission
-                    | PageFlags.ExecutePermission;
+                    | PageFlags.WritePermission;
 
                 ulong physicalAddress = entry.PhysicalStart + j * EfiConstants.EFI_PAGE_SIZE;
                 PageError pgError;
@@ -173,7 +171,9 @@ public static partial class MemMap
                 //identity map (for used memory)
                 if (needsIdentityMapping)
                 {
-                    pgError = pagingManager.IdentityMapPage(physicalAddress, USED_PAGE_FLAGS);
+                    pgError = pagingManager.IdentityMapPage(
+                        physicalAddress,
+                        USED_PAGE_FLAGS | PageFlags.ExecutePermission);
                     if (pgError != PageError.Success)
                     {
                         Console.WriteLine("ERROR: could not set address in SetupPaging (identity)");
@@ -194,13 +194,7 @@ public static partial class MemMap
             }
         }
 
-        //the idea: do not load the paging structures until we are actually in assembly, and we no longer worry
-        // about stack, the instruction pointer, etc.
-
-        // Console.Write("BP4");
-        // PageError error = pgManager.SubmitChanges();
-        // Console.Write("BP5");
-        // return error == PageError.Success;
+        //do not submit paging structures here, as we do later in the assembly trampoline code 
         return true;
     }
 }

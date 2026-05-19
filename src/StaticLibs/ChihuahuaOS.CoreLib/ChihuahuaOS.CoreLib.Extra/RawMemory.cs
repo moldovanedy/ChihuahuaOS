@@ -17,12 +17,12 @@ public static unsafe class RawMemory
 
     public static void MemMove(void* src, void* dest, ulong length)
     {
-        SpanHelpers.Memmove(ref *(byte*)src, ref *(byte*)dest, (nuint)length);
+        SpanHelpers.Memmove(ref *(byte*)dest, ref *(byte*)src, (nuint)length);
     }
 
     public static void MemMove(ref byte src, ref byte dest, ulong length)
     {
-        SpanHelpers.Memmove(ref src, ref dest, (nuint)length);
+        SpanHelpers.Memmove(ref dest, ref src, (nuint)length);
     }
 
     /// <summary>

@@ -11,7 +11,7 @@ internal static class SegmentLoader
         ElfLoader.SegmentMemoryAllocator allocatorFn,
         Stream data)
     {
-        ulong addr = allocatorFn(progHeader.SizeInMemory, progHeader.VirtualAddress, progHeader.Flags);
+        ulong addr = allocatorFn(progHeader.SizeInMemory, progHeader.VirtualAddress, (ElfSegmentFlags)progHeader.Flags);
         if (addr == 0)
         {
             return ElfError.AllocatorError;
@@ -25,6 +25,7 @@ internal static class SegmentLoader
             return ElfError.SizeExceeded;
         }
 
+        data.Position = (long)progHeader.Offset;
         byte[] buffer = new byte[progHeader.SizeInFile];
         try
         {
@@ -52,7 +53,10 @@ internal static class SegmentLoader
         {
             unsafe
             {
-                RawMemory.MemSet((void*)addr, 0, progHeader.SizeInMemory - progHeader.SizeInFile);
+                RawMemory.MemSet(
+                    (void*)(addr + progHeader.SizeInFile),
+                    0,
+                    progHeader.SizeInMemory - progHeader.SizeInFile);
             }
         }
 

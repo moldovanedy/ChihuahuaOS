@@ -2,7 +2,7 @@ section .text
 
 global SpinLocks_HaltInfLoop
 SpinLocks_HaltInfLoop:
-    loop:
+    .loop:
         cli
         hlt
-        jmp loop
+        jmp .loop

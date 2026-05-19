@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using ChihuahuaOS.Bootloader.EfiInteractions;
 using ChihuahuaOS.BootParams;
+using ChihuahuaOS.CoreLib.Extra;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.BootServices;
 using ChihuahuaOS.Elf;
@@ -15,7 +16,7 @@ using ChihuahuaOS.MinimalUtils.Toml;
 
 namespace ChihuahuaOS.Bootloader.BootSequence;
 
-public static class Launcher
+public static unsafe class Launcher
 {
     internal static KernelSettings KSettings;
     internal static OsVersion BootedOsVersion;
@@ -23,12 +24,19 @@ public static class Launcher
     public static void StartBoot(OsVersion osVersion)
     {
         //re-enable the watchdog to 60 seconds
-        unsafe
+        if (Environment.EfiSysTable != null)
         {
-            if (Environment.EfiSysTable != null)
-            {
-                Environment.EfiSysTable->BootServices->SetWatchdogTimer(60, 0, 0, null);
-            }
+            Environment.EfiSysTable->BootServices->SetWatchdogTimer(60, 0, 0, null);
+        }
+
+        EfiBootServices* bs = Environment.EfiSysTable->BootServices;
+        if (bs == null)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("FATAL ERROR: Assertion failed: EFI system table is null");
+            Console.ForegroundColor = ConsoleColor.White;
+            Fail();
+            return;
         }
 
         BootedOsVersion = osVersion;
@@ -115,7 +123,7 @@ public static class Launcher
             return;
         }
 
-        success = AllocateKernelStackMemory(pagingManager);
+        success = AllocateKernelStackMemory(bs, pagingManager);
         if (success)
         {
             Console.WriteLine("Allocated stack memory for the kernel.");
@@ -137,60 +145,69 @@ public static class Launcher
             return;
         }
 
-        unsafe
+        success = KParamsSetter.Setup(bs, pagingManager, out ulong kParamsAddr);
+        if (success)
         {
-            if (Environment.EfiSysTable == null)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("FATAL ERROR: Assertion failed: EFI system table is null");
-                Console.ForegroundColor = ConsoleColor.White;
-                Fail();
-                return;
-            }
+            Console.WriteLine("Set the kernel parameters");
+        }
+        else
+        {
+            Fail();
+            return;
+        }
 
-            if (Environment.EfiImageHandle == 0)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("FATAL ERROR: Assertion failed: EFI image handle is null");
-                Console.ForegroundColor = ConsoleColor.White;
-                Fail();
-                return;
-            }
+        if (Environment.EfiSysTable == null)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("FATAL ERROR: Assertion failed: EFI system table is null");
+            Console.ForegroundColor = ConsoleColor.White;
+            Fail();
+            return;
+        }
 
-            Console.WriteLine("Exiting boot services and jumping to kernel...");
-            success = MemMap.GetMemoryMapDirect(
-                out EfiMemoryDescriptor* _,
-                out ulong _,
-                out ulong mapKey,
-                out ulong _,
-                out uint _);
-            if (!success)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("FATAL ERROR: Could not get the final EFI memory map!");
-                Console.ForegroundColor = ConsoleColor.White;
-                Fail();
-                return;
-            }
+        if (Environment.EfiImageHandle == 0)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("FATAL ERROR: Assertion failed: EFI image handle is null");
+            Console.ForegroundColor = ConsoleColor.White;
+            Fail();
+            return;
+        }
 
-            //NOTE: it's very important to not execute anything between the final memory map retrieval
-            // and ExitBootServices, as it might invalidate the map and fail to exit boot services
+        Console.WriteLine("Exiting boot services and jumping to kernel...");
+        success = MemMap.GetMemoryMapDirect(
+            out EfiMemoryDescriptor* _,
+            out ulong _,
+            out ulong mapKey,
+            out ulong _,
+            out uint _);
+        if (!success)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("FATAL ERROR: Could not get the final EFI memory map!");
+            Console.ForegroundColor = ConsoleColor.White;
+            Fail();
+            return;
+        }
 
-            //NOTE: this is the point of no return: once we call ExitBootServices, no matter the outcome, we can't
-            // return from this function, as the firmware might have already shutdown most of its services
+        //NOTE: it's very important to not execute anything between the final memory map retrieval
+        // and ExitBootServices, as it might invalidate the map and fail to exit boot services
 
-            EfiStatus status = Environment.EfiSysTable->BootServices->ExitBootServices(
-                Environment.EfiImageHandle, mapKey);
-            if (status != EfiStatus.Success)
-            {
-                SpinLocks.HaltingInfiniteLoop();
-            }
+        //NOTE: this is the point of no return: once we call ExitBootServices, no matter the outcome, we can't
+        // return from this function, as the firmware might have already shutdown most of its services
 
-            SetupAndJumpToKernel.Call(pagingManager.GetRootPageTablePhysicalAddress(), kEntryPoint);
-
-            //NOTE: this is unreachable
+        EfiStatus status = Environment.EfiSysTable->BootServices->ExitBootServices(
+            Environment.EfiImageHandle, mapKey);
+        if (status != EfiStatus.Success)
+        {
             SpinLocks.HaltingInfiniteLoop();
         }
+
+        ulong rootPageTable = pagingManager.GetRootPageTablePhysicalAddress();
+        SetupAndJumpToKernel.Call(rootPageTable, kEntryPoint, kParamsAddr);
+
+        //NOTE: this is unreachable
+        SpinLocks.HaltingInfiniteLoop();
     }
 
     private static void Fail()
@@ -231,57 +248,57 @@ public static class Launcher
         using ElfLoader elfLoader = new(fs);
         ElfLoader.SegmentMemoryAllocator allocator = (ulong size, ulong address, ElfSegmentFlags flags) =>
         {
-            unsafe
+            if (Environment.EfiSysTable == null)
             {
-                if (Environment.EfiSysTable == null)
-                {
-                    return 0;
-                }
-
-                EfiBootServices* bs = Environment.EfiSysTable->BootServices;
-                ulong physicalAddress = 0;
-                ulong pageCount = (size + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
-
-                EfiStatus status = bs->AllocatePages(
-                    EfiAllocateType.AllocateAnyPages,
-                    EfiMemoryType.EfiLoaderData,
-                    pageCount,
-                    &physicalAddress);
-                if (status != EfiStatus.Success)
-                {
-                    return 0;
-                }
-
-                var pageFlags = PageFlags.Present;
-                if ((flags & ElfSegmentFlags.Readable) != ElfSegmentFlags.None)
-                {
-                    pageFlags |= PageFlags.ReadPermission;
-                }
-
-                if ((flags & ElfSegmentFlags.Writable) != ElfSegmentFlags.None)
-                {
-                    pageFlags |= PageFlags.WritePermission;
-                }
-
-                if ((flags & ElfSegmentFlags.Executable) != ElfSegmentFlags.None)
-                {
-                    pageFlags |= PageFlags.ExecutePermission;
-                }
-
-                for (ulong i = 0; i < pageCount; i++)
-                {
-                    PageError pageError = pgManager.MapPage(
-                        physicalAddress + EfiConstants.EFI_PAGE_SIZE * i,
-                        address + EfiConstants.EFI_PAGE_SIZE * i,
-                        pageFlags);
-                    if (pageError != PageError.Success)
-                    {
-                        return 0;
-                    }
-                }
-
-                return physicalAddress;
+                return 0;
             }
+
+            EfiBootServices* bs = Environment.EfiSysTable->BootServices;
+            ulong physicalAddress = 0;
+            ulong pageCount = (size + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
+
+            EfiStatus status = bs->AllocatePages(
+                EfiAllocateType.AllocateAnyPages,
+                EfiMemoryType.EfiLoaderData,
+                pageCount,
+                &physicalAddress);
+            if (status != EfiStatus.Success)
+            {
+                return 0;
+            }
+
+            RawMemory.MemSet((void*)physicalAddress, 0, pageCount * EfiConstants.EFI_PAGE_SIZE);
+
+            var pageFlags = PageFlags.Present;
+            if ((flags & ElfSegmentFlags.Readable) != ElfSegmentFlags.None)
+            {
+                pageFlags |= PageFlags.ReadPermission;
+            }
+
+            if ((flags & ElfSegmentFlags.Writable) != ElfSegmentFlags.None)
+            {
+                pageFlags |= PageFlags.WritePermission;
+            }
+
+            if ((flags & ElfSegmentFlags.Executable) != ElfSegmentFlags.None)
+            {
+                pageFlags |= PageFlags.ExecutePermission;
+            }
+
+            for (ulong i = 0; i < pageCount; i++)
+            {
+                PageError pageError = pgManager.MapPage(
+                    physicalAddress + EfiConstants.EFI_PAGE_SIZE * i,
+                    address + EfiConstants.EFI_PAGE_SIZE * i,
+                    pageFlags);
+
+                if (pageError != PageError.Success)
+                {
+                    return 0;
+                }
+            }
+
+            return physicalAddress;
         };
 
         ElfHeader? elfHeaderOpt = elfLoader.GetElfHeader(out ElfError error);
@@ -342,24 +359,14 @@ public static class Launcher
         }
     }
 
-    private static unsafe bool AllocateKernelStackMemory(PagingManager pgManager)
+    private static bool AllocateKernelStackMemory(EfiBootServices* bs, PagingManager pgManager)
     {
         const PageFlags KSTACK_PAGE_FLAGS = PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission;
         const ulong KSTACK_SIZE = KVirtualAddresses.KERNEL_STACK_TOP - KVirtualAddresses.KERNEL_STACK_BOTTOM;
-        const ulong PAGE_COUNT = (KSTACK_SIZE + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
+        //last page will be the stack overrun protector
+        const ulong PAGE_COUNT = (KSTACK_SIZE + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE + 1;
 
-        if (Environment.EfiSysTable == null)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(
-                "FATAL ERROR: Assertion failed: EFI system table null in Kernel stack allocation");
-            Console.ForegroundColor = ConsoleColor.White;
-            return false;
-        }
-
-        EfiBootServices* bs = Environment.EfiSysTable->BootServices;
         ulong physicalAddress = 0;
-
         EfiStatus status = bs->AllocatePages(
             EfiAllocateType.AllocateAnyPages,
             EfiMemoryType.EfiLoaderData,
@@ -375,10 +382,27 @@ public static class Launcher
             return false;
         }
 
-        for (ulong i = 0; i < PAGE_COUNT; i++)
+        RawMemory.MemSet((void*)physicalAddress, 0, PAGE_COUNT * EfiConstants.EFI_PAGE_SIZE);
+
+        //map the overrun page
+        PageError overrunPageError = pgManager.MapPage(
+            physicalAddress,
+            KVirtualAddresses.KERNEL_STACK_OVERRUN_PROTECTOR,
+            PageFlags.Present);
+        if (overrunPageError != PageError.Success)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            using string err = ((int)overrunPageError).ToString();
+            Console.WriteLine(
+                "FATAL ERROR: Kernel stack allocation: could not map the overrun page; error code: " + err);
+            Console.ForegroundColor = ConsoleColor.White;
+            return false;
+        }
+
+        for (ulong i = 0; i < PAGE_COUNT - 1; i++)
         {
             PageError pageError = pgManager.MapPage(
-                physicalAddress + EfiConstants.EFI_PAGE_SIZE * i,
+                physicalAddress + EfiConstants.EFI_PAGE_SIZE * (i + 1),
                 KVirtualAddresses.KERNEL_STACK_BOTTOM + EfiConstants.EFI_PAGE_SIZE * i,
                 KSTACK_PAGE_FLAGS);
             if (pageError != PageError.Success)

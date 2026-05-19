@@ -3,7 +3,7 @@ using System;
 namespace ChihuahuaOS.Elf.ProgramHeader;
 
 [Flags]
-public enum ElfSegmentFlags
+public enum ElfSegmentFlags : uint
 {
     None = 0,
     Executable = 1,

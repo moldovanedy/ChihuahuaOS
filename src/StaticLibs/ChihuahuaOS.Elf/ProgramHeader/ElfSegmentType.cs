@@ -1,6 +1,6 @@
 namespace ChihuahuaOS.Elf.ProgramHeader;
 
-public enum ElfSegmentType
+public enum ElfSegmentType : uint
 {
     /// <summary>
     /// Unused program header table entry.

@@ -33,11 +33,13 @@ public readonly struct ElfHeader
 
     public readonly byte AbiVersion;
 
-    public readonly int Padding1;
-
-    public readonly short Padding2;
-
+    public readonly byte Padding1;
+    public readonly byte Padding2;
     public readonly byte Padding3;
+    public readonly byte Padding4;
+    public readonly byte Padding5;
+    public readonly byte Padding6;
+    public readonly byte Padding7;
 
 
     /// <summary>

@@ -71,8 +71,7 @@ public readonly unsafe struct X64Paging : IPagingImplementation
             PageFlags.Present
             | PageFlags.ReadPermission
             | PageFlags.WritePermission
-            | PageFlags.ExecutePermission
-            | PageFlags.UserSpaceAccessible;
+            | PageFlags.ExecutePermission;
 
         ulong l4Idx = (virtualAddress >> P4_SHIFT) & INDEX_MASK;
         ulong l3Idx = (virtualAddress >> P3_SHIFT) & INDEX_MASK;

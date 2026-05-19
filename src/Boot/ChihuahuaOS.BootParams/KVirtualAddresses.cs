@@ -9,4 +9,6 @@ public static class KVirtualAddresses
     public const ulong KERNEL_STACK_TOP = 0xFFFF_FFFF_FFFF_0000;
 
     public const ulong KERNEL_STACK_BOTTOM = 0xFFFF_FFFF_FF7F_0000;
+
+    public const ulong KERNEL_STACK_OVERRUN_PROTECTOR = 0xFFFF_FFFF_FF7E_0000;
 }

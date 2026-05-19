@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace ChihuahuaOS.Elf.ProgramHeader;
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct ElfProgramHeader
 {
     public const int FILE_HEADER_SIZE = 0x38;
