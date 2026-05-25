@@ -40,4 +40,24 @@ public static unsafe class RawMemory
             byteDest[i] = byteSrc[i];
         }
     }
+
+    public static int MemCompare(byte* left, byte* right, ulong length)
+    {
+        for (ulong i = 0; i < length; i++)
+        {
+            if (left[i] == right[i])
+            {
+                continue;
+            }
+
+            if (left[i] < right[i])
+            {
+                return -1;
+            }
+
+            return 1;
+        }
+
+        return 0;
+    }
 }

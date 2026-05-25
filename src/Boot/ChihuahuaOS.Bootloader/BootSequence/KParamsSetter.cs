@@ -12,9 +12,9 @@ namespace ChihuahuaOS.Bootloader.BootSequence;
 
 internal static unsafe class KParamsSetter
 {
-    public static bool Setup(EfiBootServices* bs, PagingManager pagingManager, out ulong kParamsAddr)
+    public static bool Setup(EfiBootServices* bs, PagingManager pagingManager, out KParams* kParams)
     {
-        kParamsAddr = 0;
+        kParams = null;
         ulong physicalAddress = 0;
         EfiStatus status = bs->AllocatePages(
             EfiAllocateType.AllocateAnyPages,
@@ -36,7 +36,7 @@ internal static unsafe class KParamsSetter
 
         PageError pageError = pagingManager.IdentityMapPage(
             physicalAddress,
-            PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
+            PageFlags.Present | PageFlags.ReadPermission);
         if (pageError != PageError.Success)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -47,19 +47,17 @@ internal static unsafe class KParamsSetter
             return false;
         }
 
-        KParams* kParamsPtr = (KParams*)physicalAddress;
-        *kParamsPtr = new KParams();
-        kParamsAddr = (ulong)kParamsPtr;
+        kParams = (KParams*)physicalAddress;
+        *kParams = new KParams();
 
-        FbInfo* fbInfoPtr = (FbInfo*)((byte*)kParamsPtr + sizeof(KParams));
+        FbInfo* fbInfoPtr = (FbInfo*)((byte*)kParams + sizeof(KParams));
         bool success = SetFramebufferInfo(fbInfoPtr);
         if (!success)
         {
             return false;
         }
 
-        kParamsPtr->FramebufferInfo = fbInfoPtr;
-
+        kParams->FramebufferInfo = fbInfoPtr;
         return true;
     }
 

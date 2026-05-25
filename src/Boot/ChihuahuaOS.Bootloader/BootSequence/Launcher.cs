@@ -123,6 +123,17 @@ public static unsafe class Launcher
             return;
         }
 
+        success = InitRdLoader.Load(bs, pagingManager, BootedOsVersion, out ulong initRdFileSize);
+        if (success)
+        {
+            Console.WriteLine("Loaded init-ramdisk in memory.");
+        }
+        else
+        {
+            Fail();
+            return;
+        }
+
         success = AllocateKernelStackMemory(bs, pagingManager);
         if (success)
         {
@@ -145,7 +156,7 @@ public static unsafe class Launcher
             return;
         }
 
-        success = KParamsSetter.Setup(bs, pagingManager, out ulong kParamsAddr);
+        success = KParamsSetter.Setup(bs, pagingManager, out KParams* kParams);
         if (success)
         {
             Console.WriteLine("Set the kernel parameters");
@@ -155,6 +166,8 @@ public static unsafe class Launcher
             Fail();
             return;
         }
+
+        kParams->InitRdSize = initRdFileSize;
 
         if (Environment.EfiSysTable == null)
         {
@@ -176,11 +189,11 @@ public static unsafe class Launcher
 
         Console.WriteLine("Exiting boot services and jumping to kernel...");
         success = MemMap.GetMemoryMapDirect(
-            out EfiMemoryDescriptor* _,
-            out ulong _,
+            out EfiMemoryDescriptor* memMap,
+            out ulong memMapNumEntries,
             out ulong mapKey,
             out ulong _,
-            out uint _);
+            out uint memMapEntrySize);
         if (!success)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -203,8 +216,12 @@ public static unsafe class Launcher
             SpinLocks.HaltingInfiniteLoop();
         }
 
+        kParams->EfiMemMapStart = memMap;
+        kParams->EfiMemMapNumEntries = memMapNumEntries;
+        kParams->EfiMemMapEntrySize = memMapEntrySize;
+
         ulong rootPageTable = pagingManager.GetRootPageTablePhysicalAddress();
-        SetupAndJumpToKernel.Call(rootPageTable, kEntryPoint, kParamsAddr);
+        SetupAndJumpToKernel.Call(rootPageTable, kEntryPoint, (ulong)kParams);
 
         //NOTE: this is unreachable
         SpinLocks.HaltingInfiniteLoop();
@@ -242,6 +259,11 @@ public static unsafe class Launcher
         using FileStream? fs = File.OpenRead(kernelFilePath);
         if (fs == null)
         {
+            Console.ForegroundColor = ConsoleColor.Red;
+            using string errString = ((int)File.LastOpenError).ToString();
+            Console.WriteLine(
+                "FATAL ERROR: Could not read kernel executable file! Error code (EFI): " + errString);
+            Console.ForegroundColor = ConsoleColor.White;
             return false;
         }
 

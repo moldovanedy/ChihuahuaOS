@@ -33,6 +33,11 @@ public static unsafe class Framebuffer
 
     public static void DrawRect(int x, int y, int width, int height, SolidColor color)
     {
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
+
         if (y < 0)
         {
             y = 0;
@@ -64,7 +69,7 @@ public static unsafe class Framebuffer
         }
     }
 
-    private static uint GetRawColor(SolidColor color)
+    internal static uint GetRawColor(SolidColor color)
     {
         //NOTE: all these calculations are made only for little-endian
 

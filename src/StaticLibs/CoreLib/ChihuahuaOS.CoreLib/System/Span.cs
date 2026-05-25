@@ -85,6 +85,13 @@ public readonly ref struct Span<T>
         return new Span<T>(array);
     }
 
+    public static unsafe implicit operator ReadOnlySpan<T>(Span<T> span)
+    {
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+        return new ReadOnlySpan<T>(&span._reference, span._length);
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+    }
+
     // /// <summary>
     // /// Returns false if left and right point at the same memory and have the same length.  Note that
     // /// this does *not* check to see if the *contents* are equal.

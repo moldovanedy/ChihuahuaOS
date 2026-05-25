@@ -96,12 +96,6 @@ public unsafe class FileStream : Stream
     {
         HardCheckRwArguments(buffer, offset, count);
 
-        // ulong bufferSize = (ulong)count;
-        // fixed (byte* bufferPtr = buffer)
-        // {
-        //     LastError = _efiFile->Read(_efiFile, &bufferSize, bufferPtr + offset);
-        // }
-
         if (_wasWritingLastTime)
         {
             Flush();
@@ -156,12 +150,6 @@ public unsafe class FileStream : Stream
     {
         HardCheckRwArguments(buffer, offset, count);
 
-        // ulong bufferSize = (ulong)count;
-        // fixed (byte* bufferPtr = buffer)
-        // {
-        //     LastError = _efiFile->Write(_efiFile, &bufferSize, bufferPtr + offset);
-        // }
-
         if (_internalBufferSize == 0 || !_wasWritingLastTime)
         {
             _internalBufferSize = BUFFER_SIZE;
@@ -194,17 +182,51 @@ public unsafe class FileStream : Stream
             }
 
             int copyLength = (int)Math.Min(count, _internalBufferSize - _internalBufferPosition);
-            //TODO: for some unknown reason, Array.Copy doesn't work properly here
-            for (int i = 0; i < copyLength; i++)
-            {
-                _internalBuffer[_internalBufferPosition + i] = buffer[offset + i];
-            }
+            Array.Copy(
+                buffer,
+                offset,
+                _internalBuffer,
+                _internalBufferPosition,
+                copyLength);
+
+            // for (int i = 0; i < copyLength; i++)
+            // {
+            //     _internalBuffer[_internalBufferPosition + i] = buffer[offset + i];
+            // }
 
             count -= copyLength;
             offset += copyLength;
             _position += copyLength;
             _internalBufferPosition += copyLength;
         }
+    }
+
+    public override int ReadRaw(byte* buffer, int offset, int count)
+    {
+        _internalBufferSize = 0;
+        _internalBufferPosition = 0;
+
+        ulong bufferSize = (ulong)count;
+        LastError = _efiFile->Read(_efiFile, &bufferSize, buffer + offset);
+        UpdateEfiPos();
+
+        if (LastError != EfiStatus.Success)
+        {
+            return 0;
+        }
+
+        return (int)bufferSize;
+    }
+
+    public override void WriteRaw(byte* buffer, int offset, int count)
+    {
+        _internalBufferSize = 0;
+        _internalBufferPosition = 0;
+        _wasWritingLastTime = true;
+
+        ulong bufferSize = (ulong)count;
+        LastError = _efiFile->Write(_efiFile, &bufferSize, buffer + offset);
+        UpdateEfiPos();
     }
 
     public override byte ReadByte()
@@ -250,6 +272,28 @@ public unsafe class FileStream : Stream
         }
 
         _efiFile->Flush(_efiFile);
+    }
+    
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        Flush();
+        
+        switch (origin)
+        {
+            default:
+            case SeekOrigin.Begin:
+                Position = Math.Max(0, Math.Min(Length - 1, offset));
+                break;
+            case SeekOrigin.Current:
+                Position = Math.Max(0, Math.Min(Length - 1, Position + offset));
+                break;
+            case SeekOrigin.End:
+                Position = Math.Max(0, Math.Min(Length - 1, Length - 1 - offset));
+                break;
+        }
+
+        _efiFile->SetPosition(_efiFile, (ulong)Position);
+        return Position;
     }
 
     public override void Close()

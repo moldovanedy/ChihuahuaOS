@@ -11,7 +11,7 @@ internal static class SegmentLoader
         ElfLoader.SegmentMemoryAllocator allocatorFn,
         Stream data)
     {
-        ulong addr = allocatorFn(progHeader.SizeInMemory, progHeader.VirtualAddress, (ElfSegmentFlags)progHeader.Flags);
+        ulong addr = allocatorFn(progHeader.SizeInMemory, progHeader.VirtualAddress, progHeader.Flags);
         if (addr == 0)
         {
             return ElfError.AllocatorError;
@@ -26,26 +26,13 @@ internal static class SegmentLoader
         }
 
         data.Position = (long)progHeader.Offset;
-        byte[] buffer = new byte[progHeader.SizeInFile];
-        try
+        unsafe
         {
-            int numBytesRead = data.Read(buffer, 0, (int)progHeader.SizeInFile);
+            int numBytesRead = data.ReadRaw((byte*)addr, 0, (int)progHeader.SizeInFile);
             if (numBytesRead < (int)progHeader.SizeInFile)
             {
                 return ElfError.SizeExceeded;
             }
-
-            unsafe
-            {
-                fixed (byte* src = buffer)
-                {
-                    RawMemory.MemMove(src, (void*)addr, progHeader.SizeInFile);
-                }
-            }
-        }
-        finally
-        {
-            buffer.Dispose();
         }
 
         //zero-out eventual mismatch between the size in file vs the size in memory

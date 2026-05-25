@@ -3,7 +3,7 @@ ENTRY(_start)
 
 SECTIONS {
     /* load at a high virtual address (higher-half kernel) */
-    . = 0xFFFFEEEE80000000;
+    . = 0xFFFF800000000000;
 
     .text : ALIGN(4K)
 	{

@@ -13,13 +13,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../StaticLibs/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
+        <ProjectReference Include="../../StaticLibs/CoreLib/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
+        <ProjectReference Include="../ChihuahuaOS.InitRd/ChihuahuaOS.InitRd.csproj" />
 
         <ProjectReference Include="../../Boot/ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
         <ProjectReference Include="../../Boot/ChihuahuaOS.BootParams/ChihuahuaOS.BootParams.csproj" />
-        
+
         <ProjectReference Include="../../StaticLibs/ChihuahuaOS.MemPaginator/ChihuahuaOS.MemPaginator.csproj" />
         <ProjectReference Include="../../StaticLibs/ChihuahuaOS.MinimalUtils/ChihuahuaOS.MinimalUtils.csproj" />
+        <ProjectReference Include="..\..\StaticLibs\CoreLib\ChihuahuaOS.CoreLib.Kernel\ChihuahuaOS.CoreLib.Kernel.csproj" />
+        <ProjectReference Include="..\..\StaticLibs\FileSystems\ChihuahuaOS.Fs.Ustar\ChihuahuaOS.Fs.Ustar.csproj" />
     </ItemGroup>
 
 </Project>

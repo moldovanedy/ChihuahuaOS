@@ -4,6 +4,7 @@
         Name="CompileToNativeObject" 
         AfterTargets="CopyFilesToOutputDirectory" 
         Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release'">
+        
         <PropertyGroup>
             <ObjOutputPath>$(IntermediateOutputPath)$(TargetName).o</ObjOutputPath>
             <PublishSubDir>$(OutputPath)publish/</PublishSubDir>
@@ -18,7 +19,9 @@
         <RemoveDir Directories="$(PublishSubDir)" />
         <MakeDir Directories="$(PublishSubDir)" />
 
-        <Message Importance="high" Text="Compiling $(OutputPath)$(TargetName).dll to $(ObjOutputPath) using ILC (with local references)..." />
+        <Message 
+            Importance="high" 
+            Text="Compiling $(OutputPath)$(TargetName).dll to $(ObjOutputPath) using ILC (with local references)..." />
         <Exec 
             Command="ilc -o &quot;$(ObjOutputPath)&quot; @(IlcReferences->'&quot;%(Identity)&quot;', ' ') $(IlcArgs)" 
             WorkingDirectory="$(ProjectDir)" />
@@ -29,6 +32,7 @@
         Name="LinkExecutable" 
         AfterTargets="CompileToNativeObject" 
         Condition="('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release') and '$(OutputType)' == 'Exe'">
+        
         <PropertyGroup>
             <AppFinalOutputPath>$(PublishSubDir)$(TargetName)</AppFinalOutputPath>
         </PropertyGroup>
@@ -51,6 +55,7 @@
     </Target>
     
     <Target Name="CleanupIntermediates" AfterTargets="AfterCompile" Condition="'$(Configuration)' == 'Release'">
+        
         <ItemGroup>
             <IntermediateFiles Include="@(IntemediateFilesGlob->'&quot;$(PublishSubDir)%(Identity)&quot;', ';')" />
         </ItemGroup>

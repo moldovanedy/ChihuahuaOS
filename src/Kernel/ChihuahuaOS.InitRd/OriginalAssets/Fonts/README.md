@@ -1,0 +1,2 @@
+These are the .ttf font files, but they are not included in the kernel. For the kernel to make use of the fonts,
+they need to be converted to PSF (PC Screen Font). This is generally achieved using the "ttf2psf" utility.

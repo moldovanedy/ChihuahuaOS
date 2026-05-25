@@ -6,7 +6,7 @@
         </PropertyGroup>
 
         <ItemGroup>
-            <PublishFiles Include="$(PublishPath)**/*" />
+            <PublishFiles Include="$(PublishPath)**/*" Exclude="**/*.o;**/*.pdb" />
         </ItemGroup>
 
         <Message Importance="high" Text="Installing Bootloader to &quot;$(InstallDestination)&quot;..." />

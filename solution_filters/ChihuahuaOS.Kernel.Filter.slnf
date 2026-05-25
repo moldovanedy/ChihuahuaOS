@@ -4,10 +4,13 @@
     "projects": [
       "Boot\\ChihuahuaOS.BootParams\\ChihuahuaOS.BootParams.csproj",
       "Boot\\ChihuahuaOS.EfiApi\\ChihuahuaOS.EfiApi.csproj",
+      "Kernel\\ChihuahuaOS.InitRd\\ChihuahuaOS.InitRd.csproj",
       "Kernel\\ChihuahuaOS.Kernel\\ChihuahuaOS.Kernel.csproj",
-      "StaticLibs\\ChihuahuaOS.CoreLib\\ChihuahuaOS.CoreLib.csproj",
       "StaticLibs\\ChihuahuaOS.MemPaginator\\ChihuahuaOS.MemPaginator.csproj",
-      "StaticLibs\\ChihuahuaOS.MinimalUtils\\ChihuahuaOS.MinimalUtils.csproj"
+      "StaticLibs\\ChihuahuaOS.MinimalUtils\\ChihuahuaOS.MinimalUtils.csproj",
+      "StaticLibs\\CoreLib\\ChihuahuaOS.CoreLib.Kernel\\ChihuahuaOS.CoreLib.Kernel.csproj",
+      "StaticLibs\\CoreLib\\ChihuahuaOS.CoreLib\\ChihuahuaOS.CoreLib.csproj",
+      "StaticLibs\\FileSystems\\ChihuahuaOS.Fs.Ustar\\ChihuahuaOS.Fs.Ustar.csproj"
     ]
   }
 }

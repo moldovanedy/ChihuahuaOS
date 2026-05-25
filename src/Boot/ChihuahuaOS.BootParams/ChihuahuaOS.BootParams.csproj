@@ -8,8 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../StaticLibs/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
+        <ProjectReference Include="../../StaticLibs/CoreLib/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
         <ProjectReference Include="../../StaticLibs/ChihuahuaOS.MinimalUtils/ChihuahuaOS.MinimalUtils.csproj" />
+
+        <ProjectReference Include="../ChihuahuaOS.EfiApi/ChihuahuaOS.EfiApi.csproj" />
     </ItemGroup>
 
 </Project>

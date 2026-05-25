@@ -1,0 +1,35 @@
+<Project>
+    <Target Name="CreateRamDisk" AfterTargets="BeforeBuild">
+        <PropertyGroup>
+            <PublishPath>$(OutputPath)publish/</PublishPath>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <AssetFiles Include="Assets/**/*" />
+        </ItemGroup>
+
+        <PropertyGroup>
+            <TarArgs>-cf $(PublishPath)init.$(Version).rd</TarArgs>
+            <TarArgs>$(TarArgs) --format=ustar --no-auto-compress --owner=0 --group=0</TarArgs>
+            <TarArgs>$(TarArgs) @(AssetFiles->'&quot;%(Identity)&quot;', ' ')</TarArgs>
+        </PropertyGroup>
+
+        <Exec Command="tar $(TarArgs)" Condition="'@AssetFiles' != ''" />
+    </Target>
+
+    <Target Name="InstallRamDisk" AfterTargets="CreateRamDisk">
+        <PropertyGroup>
+            <InstallDestination>$(FinalBinDir)EFI/BOOT/</InstallDestination>
+            <PublishPath>$(OutputPath)publish/</PublishPath>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <PublishFiles Include="$(PublishPath)**/*" Exclude="**/*.o" />
+        </ItemGroup>
+
+        <Message Importance="high" Text="Installing InitRd to &quot;$(InstallDestination)&quot;..." />
+
+        <MakeDir Directories="$(InstallDestination)" />
+        <Copy SourceFiles="@(PublishFiles)" DestinationFolder="$(InstallDestination)" SkipUnchangedFiles="true" />
+    </Target>
+</Project>

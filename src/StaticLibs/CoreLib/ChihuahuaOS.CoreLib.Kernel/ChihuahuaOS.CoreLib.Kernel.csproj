@@ -3,12 +3,12 @@
     <Import Project="$(CustomSdkDir)ChihuahuaOS.CustomCoreLib.props" />
 
     <PropertyGroup>
-        <RootNamespace>ChihuahuaOS.Elf</RootNamespace>
-        <Configurations>Debug;Release;DebugUefi;ReleaseUefi</Configurations>
+        <RootNamespace>""</RootNamespace>
+        <Configurations>Debug;Release</Configurations>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../CoreLib/ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
+        <ProjectReference Include="../ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
     </ItemGroup>
 </Project>

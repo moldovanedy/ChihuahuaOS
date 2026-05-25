@@ -74,11 +74,17 @@ public abstract class Stream : IDisposable
 
     public abstract void Write(byte[] buffer, int offset, int count);
 
+    public abstract unsafe int ReadRaw(byte* buffer, int offset, int count);
+
+    public abstract unsafe void WriteRaw(byte* buffer, int offset, int count);
+
     public abstract byte ReadByte();
 
     public abstract void WriteByte(byte data);
 
     public abstract void Flush();
+
+    public abstract long Seek(long offset, SeekOrigin origin);
 
     public virtual void Close()
     {

@@ -6,7 +6,7 @@
         </PropertyGroup>
 
         <ItemGroup>
-            <PublishFiles Include="$(PublishPath)**/*" />
+            <PublishFiles Include="$(PublishPath)**/*" Exclude="**/*.o" />
         </ItemGroup>
 
         <Message Importance="high" Text="Installing Kernel to &quot;$(InstallDestination)&quot;..." />

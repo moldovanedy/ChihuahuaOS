@@ -26,6 +26,15 @@ internal class NullStream : Stream
     {
     }
 
+    public override unsafe int ReadRaw(byte* buffer, int offset, int count)
+    {
+        return 0;
+    }
+
+    public override unsafe void WriteRaw(byte* buffer, int offset, int count)
+    {
+    }
+
     public override byte ReadByte()
     {
         return 0;
@@ -37,5 +46,10 @@ internal class NullStream : Stream
 
     public override void Flush()
     {
+    }
+
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        return 0;
     }
 }
