@@ -1,3 +1,4 @@
+using System.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace System;
@@ -56,5 +57,28 @@ internal static class SpanHelpers
         {
             Unsafe.Add(ref dest, (nint)i) = value;
         }
+    }
+
+
+    //NOTE: these are not in the source, but I couldn't find any implementation in the dotnet repo, and the linker needs
+    // those functions (MemCopy and MemZero)
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [RuntimeExport("RhSpanHelpers_MemCopy")]
+    internal static void MemCopy(ref byte dest, ref byte src, nuint len)
+    {
+        for (nuint i = len; i > 0; i--)
+        {
+            Unsafe.Add(ref dest, (nint)(i - 1)) = Unsafe.Add(ref src, (nint)(i - 1));
+        }
+    }
+
+    [Intrinsic]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [RuntimeExport("RhSpanHelpers_MemZero")]
+    internal static void MemZero(ref byte dest, nuint len)
+    {
+        Fill(ref dest, 0, len);
     }
 }

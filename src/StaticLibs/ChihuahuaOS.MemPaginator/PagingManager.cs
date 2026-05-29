@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 #if ARCH_X64
 using ChihuahuaOS.MemPaginator.Implementations.X64;
@@ -10,7 +9,6 @@ namespace ChihuahuaOS.MemPaginator;
 public readonly unsafe struct PagingManager
 {
     public const ulong PAGE_TABLE_SIZE = 4096;
-    public const ulong PHYSICAL_MEMORY_OFFSET = 16UL * 1024UL * 1024UL * 1024UL * 1024UL;
 
     //we store like that so we don't have problems with interface fields (weird issues after that)
 
@@ -18,10 +16,21 @@ public readonly unsafe struct PagingManager
     private readonly X64Paging _x64Paging;
 #endif
 
-    public PagingManager(PageTable* rootPageTable, bool isPagingDisabled, Func<ulong> frameAllocator)
+    public PagingManager(PageTable* rootPageTable, delegate* unmanaged<ulong> frameAllocator)
     {
 #if ARCH_X64
-        _x64Paging = new X64Paging(rootPageTable, isPagingDisabled, frameAllocator);
+        _x64Paging = new X64Paging(rootPageTable, frameAllocator);
+#endif
+    }
+
+    /// <summary>
+    /// For the initial retrieving of the root page table (e.g., on X64 it will directly take it from the CR3 register).
+    /// </summary>
+    /// <returns></returns>
+    public static ulong GetRootPageTableInitial()
+    {
+#if ARCH_X64
+        return X64PagingSubmit.GetRootPageTable();
 #endif
     }
 
@@ -34,17 +43,6 @@ public readonly unsafe struct PagingManager
         return PageError.UnknownError;
 #endif
     }
-
-#if DEBUG
-    public ulong DebugTestPaging(ulong virtualAddress)
-    {
-#if ARCH_X64
-        return _x64Paging.DebugTestPaging(virtualAddress);
-#else
-        return 0;
-#endif
-    }
-#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public PageError IdentityMapPage(ulong address, PageFlags flags)
@@ -84,16 +82,6 @@ public readonly unsafe struct PagingManager
     {
 #if ARCH_X64
         return _x64Paging.VirtualToPhysical(virtualAddress);
-#else
-        return 0;
-#endif
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ulong PhysicalToVirtual(ulong physicalAddress)
-    {
-#if ARCH_X64
-        return _x64Paging.PhysicalToVirtual(physicalAddress);
 #else
         return 0;
 #endif

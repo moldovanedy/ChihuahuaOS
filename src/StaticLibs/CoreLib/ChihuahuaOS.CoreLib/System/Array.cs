@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using ChihuahuaOS.CoreLib.Extra.Runtime;
 using Internal.Runtime.CompilerHelpers;
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+
 namespace System;
 
 public abstract class Array : IDisposable
@@ -168,6 +170,77 @@ public abstract class Array : IDisposable
         }
 
         return -1;
+    }
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+    public static unsafe void Sort<T>(Array array, delegate* unmanaged<T*, T*, int> comparer)
+    {
+        Sort(array, 0, array.Length - 1, comparer);
+    }
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+    public static unsafe void Sort<T>(
+        Array array, int leftIndex, int rightIndex, delegate* unmanaged<T*, T*, int> comparer)
+    {
+        MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(array);
+        nuint elementSize = pMethodTable->UsComponentSize;
+
+        int i = leftIndex;
+        int j = rightIndex;
+
+        byte elemStart = Unsafe.AddByteOffset(
+            ref Unsafe.As<RawArrayData>(array).Data,
+            (uint)leftIndex * elementSize);
+        T* pivot = (T*)&elemStart;
+        while (i <= j)
+        {
+            while (true)
+            {
+                elemStart = Unsafe.AddByteOffset(
+                    ref Unsafe.As<RawArrayData>(array).Data,
+                    (uint)i * elementSize);
+                T* leftElement = (T*)&elemStart;
+
+                if (comparer(leftElement, pivot) == -1)
+                {
+                    break;
+                }
+
+                i++;
+            }
+
+            while (true)
+            {
+                elemStart = Unsafe.AddByteOffset(
+                    ref Unsafe.As<RawArrayData>(array).Data,
+                    (uint)j * elementSize);
+                T* rightElement = (T*)&elemStart;
+
+                if (comparer(rightElement, pivot) == 1)
+                {
+                    break;
+                }
+
+                j--;
+            }
+
+            if (i <= j)
+            {
+                (array[i], array[j]) = (array[j], array[i]);
+                i++;
+                j--;
+            }
+        }
+
+        if (leftIndex < j)
+        {
+            Sort(array, leftIndex, j, comparer);
+        }
+
+        if (i < rightIndex)
+        {
+            Sort(array, i, rightIndex, comparer);
+        }
     }
 
     #endregion

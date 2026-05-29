@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 using ChihuahuaOS.BootParams;
 using ChihuahuaOS.CoreLib;
 using ChihuahuaOS.Kernel.FramebufferManager;
+using ChihuahuaOS.Kernel.MemoryManager.PMM;
+using ChihuahuaOS.MemPaginator;
 using ChihuahuaOS.MinimalUtils;
 
 namespace ChihuahuaOS.Kernel;
@@ -10,6 +12,7 @@ namespace ChihuahuaOS.Kernel;
 internal static unsafe class Program
 {
     internal static KParams* KernelParamsPtr { get; set; }
+    internal static PhysicalMemManager Pmm { get; private set; }
 
     internal static void Main()
     {
@@ -24,6 +27,22 @@ internal static unsafe class Program
         Framebuffer.Clear(new SolidColor(0x00_00_00));
         Console.WriteLine("Welcome to ChihuahuaOS!\0"u8);
 
+        EfiMapWrapper efiMap = new(
+            KernelParamsPtr->EfiMemMapStart,
+            (int)KernelParamsPtr->EfiMemMapNumEntries,
+            KernelParamsPtr->EfiMemMapEntrySize);
+        efiMap.Sort();
+
+        PmmPageFrameAllocator.SetFreeKernelMemoryStart(KernelParamsPtr->FreeMemChunkPhysicalAddress);
+        PagingManager pagingManager = new(
+            (PageTable*)PagingManager.GetRootPageTableInitial(),
+            &PmmPageFrameAllocator.AllocPageFramesRaw);
+
+        Pmm = new PhysicalMemManager(pagingManager, efiMap);
+        Console.WriteLine("Setup physical memory manager\0"u8);
+
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        Console.WriteLine("System stopped, you can safely shut down the device.\0"u8);
         SpinLocks.HaltingInfiniteLoop();
     }
 

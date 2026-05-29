@@ -30,7 +30,7 @@ public struct UInt16
     }
 
 
-    public override string ToString()
+    public readonly override string ToString()
     {
         return NumberParser.ParseInteger((ulong)this);
     }

@@ -21,8 +21,9 @@
 
         <ProjectReference Include="../../StaticLibs/ChihuahuaOS.MemPaginator/ChihuahuaOS.MemPaginator.csproj" />
         <ProjectReference Include="../../StaticLibs/ChihuahuaOS.MinimalUtils/ChihuahuaOS.MinimalUtils.csproj" />
-        <ProjectReference Include="..\..\StaticLibs\CoreLib\ChihuahuaOS.CoreLib.Kernel\ChihuahuaOS.CoreLib.Kernel.csproj" />
-        <ProjectReference Include="..\..\StaticLibs\FileSystems\ChihuahuaOS.Fs.Ustar\ChihuahuaOS.Fs.Ustar.csproj" />
+        <ProjectReference Include="../../StaticLibs/CoreLib/ChihuahuaOS.CoreLib.Kernel/ChihuahuaOS.CoreLib.Kernel.csproj" />
+        <ProjectReference Include="../../StaticLibs/FileSystems/ChihuahuaOS.Fs.Ustar/ChihuahuaOS.Fs.Ustar.csproj" />
+        <ProjectReference Include="../ChihuahuaOS.Kernel.MemoryManager/ChihuahuaOS.Kernel.MemoryManager.csproj" />
     </ItemGroup>
 
 </Project>

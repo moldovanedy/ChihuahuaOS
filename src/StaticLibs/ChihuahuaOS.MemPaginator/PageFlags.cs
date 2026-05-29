@@ -13,7 +13,7 @@ public enum PageFlags
     Present = 1,
 
     /// <summary>
-    /// Data is accessible by both the kernel and user-space.
+    /// Data is accessible by both the kernel-space and user-space. Otherwise, just kernel-space accessible.
     /// </summary>
     UserSpaceAccessible = 1 << 1,
 
@@ -30,10 +30,5 @@ public enum PageFlags
     /// <summary>
     /// Data can be read.
     /// </summary>
-    ReadPermission = 1 << 4,
-
-    /// <summary>
-    /// This is a huge page, generally 2 MiB instead of the usual 4 KiB.
-    /// </summary>
-    IsHugePage = 1 << 15
+    ReadPermission = 1 << 4
 }

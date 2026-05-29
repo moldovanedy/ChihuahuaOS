@@ -57,7 +57,14 @@ internal static unsafe class KParamsSetter
             return false;
         }
 
+        success = SetupFreeKernelMemory(bs, pagingManager, out ulong freeKMemoryPhysAddress);
+        if (!success)
+        {
+            return false;
+        }
+
         kParams->FramebufferInfo = fbInfoPtr;
+        kParams->FreeMemChunkPhysicalAddress = freeKMemoryPhysAddress;
         return true;
     }
 
@@ -107,6 +114,55 @@ internal static unsafe class KParamsSetter
             }
             default:
                 return false;
+        }
+
+        return true;
+    }
+
+    private static bool SetupFreeKernelMemory(
+        EfiBootServices* bs,
+        PagingManager pagingManager,
+        out ulong physicalAddress)
+    {
+        //the number of pages for 2 MiB
+        const int NUM_PAGES = 512;
+
+        ulong physAddress = 0;
+        physicalAddress = 0;
+        EfiStatus status = bs->AllocatePages(
+            EfiAllocateType.AllocateAnyPages,
+            EfiMemoryType.ChihuahuaFreeKernelMemory,
+            NUM_PAGES,
+            &physAddress);
+
+        physicalAddress = physAddress;
+        if (status != EfiStatus.Success || physicalAddress == 0)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            using string err = ((int)status).ToString();
+            Console.WriteLine(
+                "FATAL ERROR: Kernel parameters: failed to allocate the free kernel memory; error code:" + err);
+            Console.ForegroundColor = ConsoleColor.White;
+            return false;
+        }
+
+        RawMemory.MemSet((void*)physicalAddress, 0, NUM_PAGES * EfiConstants.EFI_PAGE_SIZE);
+
+        for (ulong i = 0; i < NUM_PAGES; i++)
+        {
+            PageError pageError = pagingManager.IdentityMapPage(
+                physicalAddress + i * EfiConstants.EFI_PAGE_SIZE,
+                PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
+            if (pageError != PageError.Success)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                using string err = ((int)pageError).ToString();
+                Console.WriteLine(
+                    "FATAL ERROR: Kernel parameters: could not map a page of the free kernel memory; error code: " +
+                    err);
+                Console.ForegroundColor = ConsoleColor.White;
+                return false;
+            }
         }
 
         return true;

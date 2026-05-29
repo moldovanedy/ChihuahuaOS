@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using ChihuahuaOS.CoreLib.Extra;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.BootServices;
@@ -68,7 +69,7 @@ public static partial class MemMap
             ulong numPages = (localMapSize + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
             ulong physAddress = 0;
             status = bs->AllocatePages(
-                EfiAllocateType.AllocateAnyPages, EfiMemoryType.EfiLoaderData, numPages, &physAddress);
+                EfiAllocateType.AllocateAnyPages, EfiMemoryType.ChihuahuaKernelMemory, numPages, &physAddress);
             if (status != EfiStatus.Success || physAddress == 0)
             {
                 Console.WriteLine("ERROR: could not allocate memory in GetMemoryMap");
@@ -124,7 +125,7 @@ public static partial class MemMap
         ulong physAddress = 0;
 
         EfiStatus status = bs->AllocatePages(
-            EfiAllocateType.AllocateAnyPages, EfiMemoryType.EfiLoaderData, 1, &physAddress);
+            EfiAllocateType.AllocateAnyPages, EfiMemoryType.ChihuahuaPageTables, 1, &physAddress);
         if (status != EfiStatus.Success)
         {
             Console.WriteLine("ERROR: could not allocate memory in SetupPaging");
@@ -132,25 +133,23 @@ public static partial class MemMap
         }
 
         RawMemory.MemSet((void*)physAddress, 0, EfiConstants.EFI_PAGE_SIZE);
+
         pagingManagerOpt = new PagingManager(
             (PageTable*)physAddress,
-            false,
-            () =>
-            {
-                ulong framePhysAddress = 0;
-                EfiStatus stat = bs->AllocatePages(
-                    EfiAllocateType.AllocateAnyPages, EfiMemoryType.EfiLoaderData, 1, &framePhysAddress);
-                if (stat != EfiStatus.Success)
-                {
-                    Console.WriteLine("ERROR: could not allocate memory in frame allocator in SetupPaging");
-                    return 0;
-                }
+            &FrameAllocator);
 
-                RawMemory.MemSet((void*)framePhysAddress, 0, EfiConstants.EFI_PAGE_SIZE);
-                return framePhysAddress;
-            });
+        const PageFlags USED_PAGE_FLAGS = PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission;
+        
         PagingManager pagingManager = pagingManagerOpt.Value;
-
+        PageError pgError = pagingManager.IdentityMapPage(
+            physAddress,
+            USED_PAGE_FLAGS);
+        if (pgError != PageError.Success)
+        {
+            Console.WriteLine("ERROR: could not identity map the root page table in SetupPaging (identity)");
+            return false;
+        }
+        
         for (int i = 0; i < memMap.ArrayLength; i++)
         {
             EfiMemoryDescriptor entry = memMap[i];
@@ -158,43 +157,53 @@ public static partial class MemMap
                 entry.Type != EfiMemoryType.EfiConventionalMemory
                 && entry.Type != EfiMemoryType.EfiUnusableMemory;
 
-            for (ulong j = 0; j < entry.NumberOfPages; j++)
+            //identity map (for used memory)
+            if (needsIdentityMapping)
             {
-                const PageFlags USED_PAGE_FLAGS =
-                    PageFlags.Present
-                    | PageFlags.ReadPermission
-                    | PageFlags.WritePermission;
-
-                ulong physicalAddress = entry.PhysicalStart + j * EfiConstants.EFI_PAGE_SIZE;
-                PageError pgError;
-
-                //identity map (for used memory)
-                if (needsIdentityMapping)
+                for (ulong j = 0; j < entry.NumberOfPages; j++)
                 {
+
+                    ulong physicalAddress = entry.PhysicalStart + j * EfiConstants.EFI_PAGE_SIZE;
+
                     pgError = pagingManager.IdentityMapPage(
                         physicalAddress,
                         USED_PAGE_FLAGS | PageFlags.ExecutePermission);
                     if (pgError != PageError.Success)
                     {
-                        Console.WriteLine("ERROR: could not set address in SetupPaging (identity)");
+                        Console.WriteLine("ERROR: could not set an address in SetupPaging");
                         return false;
                     }
-                }
-
-                //offset map (for all memory)
-                pgError = pagingManager.MapPage(
-                    physicalAddress,
-                    physicalAddress + PagingManager.PHYSICAL_MEMORY_OFFSET,
-                    USED_PAGE_FLAGS);
-                if (pgError != PageError.Success)
-                {
-                    Console.WriteLine("ERROR: could not set address in SetupPaging (offset)");
-                    return false;
                 }
             }
         }
 
         //do not submit paging structures here, as we do later in the assembly trampoline code 
         return true;
+    }
+
+
+    [UnmanagedCallersOnly]
+    private static unsafe ulong FrameAllocator()
+    {
+        if (Environment.EfiSysTable == null || Environment.EfiSysTable->BootServices == null)
+        {
+            return 0;
+        }
+
+        EfiBootServices* bs = Environment.EfiSysTable->BootServices;
+        ulong framePhysAddress = 0;
+        EfiStatus stat = bs->AllocatePages(
+            EfiAllocateType.AllocateAnyPages,
+            EfiMemoryType.ChihuahuaPageTables,
+            1,
+            &framePhysAddress);
+        if (stat != EfiStatus.Success)
+        {
+            Console.WriteLine("ERROR: could not allocate memory in frame allocator in SetupPaging");
+            return 0;
+        }
+
+        RawMemory.MemSet((void*)framePhysAddress, 0, EfiConstants.EFI_PAGE_SIZE);
+        return framePhysAddress;
     }
 }

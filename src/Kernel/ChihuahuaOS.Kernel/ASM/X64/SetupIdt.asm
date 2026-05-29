@@ -30,17 +30,17 @@ idt_end:
 idt_descriptor:
     dw idt_end - idt_start - 1
     dq idt_start
-    
+
 
 section .text
 
 global Kernel_SetupIdt
 Kernel_SetupIdt:
-    
+
     ; Vector 14: Page fault
     lea rax, [rel PageFaultHandler]
     lea rdi, [rel idt_start + 14 * 16]
-    
+
     mov [rdi], ax ; Offset low
     shr rax, 16
     mov [rdi + 6], ax ; Offset mid
@@ -60,7 +60,15 @@ Kernel_SetupIdt:
     
 PageFaultHandler:
     mov rax, 0xBA5E
+
+    mov r15, cr2
+    mov rbx, [rsp]
+    mov rcx, [rsp + 0x08]
+    mov rdx, [rsp + 0x10]
+    mov r9, [rsp + 0x18]
+    mov r10, [rsp + 0x20]
+    mov r11, [rsp + 0x28]
+
     .loop:
         hlt
         jmp .loop
-        

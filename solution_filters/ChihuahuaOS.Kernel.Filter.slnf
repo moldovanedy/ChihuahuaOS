@@ -5,6 +5,7 @@
       "Boot\\ChihuahuaOS.BootParams\\ChihuahuaOS.BootParams.csproj",
       "Boot\\ChihuahuaOS.EfiApi\\ChihuahuaOS.EfiApi.csproj",
       "Kernel\\ChihuahuaOS.InitRd\\ChihuahuaOS.InitRd.csproj",
+      "Kernel\\ChihuahuaOS.Kernel.MemoryManager\\ChihuahuaOS.Kernel.MemoryManager.csproj",
       "Kernel\\ChihuahuaOS.Kernel\\ChihuahuaOS.Kernel.csproj",
       "StaticLibs\\ChihuahuaOS.MemPaginator\\ChihuahuaOS.MemPaginator.csproj",
       "StaticLibs\\ChihuahuaOS.MinimalUtils\\ChihuahuaOS.MinimalUtils.csproj",

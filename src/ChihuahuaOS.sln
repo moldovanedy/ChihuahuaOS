@@ -34,6 +34,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CoreLib", "CoreLib", "{F614
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.CoreLib.Kernel", "StaticLibs\CoreLib\ChihuahuaOS.CoreLib.Kernel\ChihuahuaOS.CoreLib.Kernel.csproj", "{B814DF32-4955-48A2-BAEF-CF51F6F587AE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChihuahuaOS.Kernel.MemoryManager", "Kernel\ChihuahuaOS.Kernel.MemoryManager\ChihuahuaOS.Kernel.MemoryManager.csproj", "{8787D709-75BC-4087-913A-AE2FFF05AFB7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -138,6 +140,14 @@ Global
 		{B814DF32-4955-48A2-BAEF-CF51F6F587AE}.DebugUefi|Any CPU.Build.0 = Debug|Any CPU
 		{B814DF32-4955-48A2-BAEF-CF51F6F587AE}.ReleaseUefi|Any CPU.ActiveCfg = Debug|Any CPU
 		{B814DF32-4955-48A2-BAEF-CF51F6F587AE}.ReleaseUefi|Any CPU.Build.0 = Debug|Any CPU
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7}.DebugUefi|Any CPU.ActiveCfg = Debug|Any CPU
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7}.DebugUefi|Any CPU.Build.0 = Debug|Any CPU
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7}.ReleaseUefi|Any CPU.ActiveCfg = Debug|Any CPU
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7}.ReleaseUefi|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(RiderSharedRunConfigurations) = postSolution
 		File = .run\Run_QEMU.run.xml
@@ -157,5 +167,6 @@ Global
 		{CA1874C5-2862-4C53-A9D5-375B7F5E57D4} = {F6147F2F-9110-43B6-88DD-59168B5BF930}
 		{38A64220-2E9C-47C7-B0C1-30326E60FF17} = {F6147F2F-9110-43B6-88DD-59168B5BF930}
 		{B814DF32-4955-48A2-BAEF-CF51F6F587AE} = {F6147F2F-9110-43B6-88DD-59168B5BF930}
+		{8787D709-75BC-4087-913A-AE2FFF05AFB7} = {73149CBB-AB1C-42E1-B1F8-91E88B62F337}
 	EndGlobalSection
 EndGlobal

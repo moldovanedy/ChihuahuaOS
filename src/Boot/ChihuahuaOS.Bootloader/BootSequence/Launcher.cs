@@ -190,10 +190,10 @@ public static unsafe class Launcher
         Console.WriteLine("Exiting boot services and jumping to kernel...");
         success = MemMap.GetMemoryMapDirect(
             out EfiMemoryDescriptor* memMap,
-            out ulong memMapNumEntries,
+            out ulong memMapSize,
             out ulong mapKey,
-            out ulong _,
-            out uint memMapEntrySize);
+            out ulong memMapEntrySize,
+            out uint _);
         if (!success)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -217,8 +217,21 @@ public static unsafe class Launcher
         }
 
         kParams->EfiMemMapStart = memMap;
-        kParams->EfiMemMapNumEntries = memMapNumEntries;
+        kParams->EfiMemMapNumEntries = memMapSize / memMapEntrySize;
         kParams->EfiMemMapEntrySize = memMapEntrySize;
+
+        ulong numPagesEfiMap = (memMapSize + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
+        for (ulong i = 0; i < numPagesEfiMap; i++)
+        {
+            //map as read-write so the kernel can sort the map
+            PageError pgError = pagingManager.IdentityMapPage(
+                (ulong)memMap + i * EfiConstants.EFI_PAGE_SIZE,
+                PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
+            if (pgError != PageError.Success)
+            {
+                SpinLocks.HaltingInfiniteLoop();
+            }
+        }
 
         ulong rootPageTable = pagingManager.GetRootPageTablePhysicalAddress();
         SetupAndJumpToKernel.Call(rootPageTable, kEntryPoint, (ulong)kParams);
@@ -281,7 +294,7 @@ public static unsafe class Launcher
 
             EfiStatus status = bs->AllocatePages(
                 EfiAllocateType.AllocateAnyPages,
-                EfiMemoryType.EfiLoaderData,
+                EfiMemoryType.ChihuahuaKernelMemory,
                 pageCount,
                 &physicalAddress);
             if (status != EfiStatus.Success)
@@ -391,7 +404,7 @@ public static unsafe class Launcher
         ulong physicalAddress = 0;
         EfiStatus status = bs->AllocatePages(
             EfiAllocateType.AllocateAnyPages,
-            EfiMemoryType.EfiLoaderData,
+            EfiMemoryType.ChihuahuaKernelMemory,
             PAGE_COUNT,
             &physicalAddress);
         if (status != EfiStatus.Success)

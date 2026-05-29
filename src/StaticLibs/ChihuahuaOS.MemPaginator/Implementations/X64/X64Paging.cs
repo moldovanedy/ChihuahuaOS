@@ -1,5 +1,4 @@
 #if ARCH_X64
-using System;
 using System.Runtime.CompilerServices;
 using ChihuahuaOS.CoreLib.Extra;
 
@@ -16,54 +15,19 @@ public readonly unsafe struct X64Paging : IPagingImplementation
     private const int P1_SHIFT = 12;
 
     private readonly PageTable* _rootPageTable;
-    private readonly bool _isCurrentlyActive;
-    private readonly Func<ulong> _frameAllocator;
+    private readonly delegate* unmanaged<ulong> _frameAllocator;
 
-    public X64Paging(PageTable* rootPageTable, bool isCurrentlyActive, Func<ulong> frameAllocator)
+    public X64Paging(PageTable* rootPageTable, delegate* unmanaged<ulong> frameAllocator)
     {
         _rootPageTable = rootPageTable;
-        _isCurrentlyActive = isCurrentlyActive;
         _frameAllocator = frameAllocator;
     }
 
-#if DEBUG
-    /// <summary>
-    /// A small test to determine whether the mapping is correct. Will return the entry for the given virtual address,
-    /// being formed from the physical address and flags.
-    /// </summary>
-    /// <param name="virtualAddress"></param>
-    /// <returns></returns>
-    public ulong DebugTestPaging(ulong virtualAddress)
+    public static ulong GetRootPageTableInitial()
     {
-        ulong l4Idx = (virtualAddress >> P4_SHIFT) & INDEX_MASK;
-        ulong l3Idx = (virtualAddress >> P3_SHIFT) & INDEX_MASK;
-        ulong l2Idx = (virtualAddress >> P2_SHIFT) & INDEX_MASK;
-        ulong l1Idx = (virtualAddress >> P1_SHIFT) & INDEX_MASK;
-
-        ulong entryForL3 = _rootPageTable->Entries[l4Idx];
-        if (entryForL3 == 0)
-        {
-            return 0;
-        }
-
-        PageTable* l3Table = GetPageTableFromPhysicalAddress(entryForL3 & PHYSICAL_ADDRESS_MASK, false);
-        ulong entryForL2 = l3Table->Entries[l3Idx];
-        if (entryForL2 == 0)
-        {
-            return 0;
-        }
-
-        PageTable* l2Table = GetPageTableFromPhysicalAddress(entryForL2 & PHYSICAL_ADDRESS_MASK, false);
-        ulong entryForL1 = l2Table->Entries[l2Idx];
-        if (entryForL1 == 0)
-        {
-            return 0;
-        }
-
-        PageTable* l1Table = GetPageTableFromPhysicalAddress(entryForL1 & PHYSICAL_ADDRESS_MASK, false);
-        return l1Table->Entries[l1Idx];
+        return X64PagingSubmit.GetRootPageTable();
     }
-#endif
+
 
     public PageError MapPage(ulong physicalAddress, ulong virtualAddress, PageFlags flags)
     {
@@ -95,12 +59,19 @@ public readonly unsafe struct X64Paging : IPagingImplementation
             }
 
             RawMemory.MemSet(
-                GetPageTableFromPhysicalAddress(physAddr, _isCurrentlyActive), 0, PagingManager.PAGE_TABLE_SIZE);
+                GetPageTableFromPhysicalAddress(physAddr), 0, PagingManager.PAGE_TABLE_SIZE);
             entryForL3 = ConstructTableEntry(physAddr, NON_TERMINAL_PAGE_TABLE_FLAGS);
             _rootPageTable->Entries[l4Idx] = entryForL3;
+
+            //identity-map self
+            PageError pgError = MapPage(physAddr, physAddr, NON_TERMINAL_PAGE_TABLE_FLAGS);
+            if (pgError != PageError.Success)
+            {
+                return pgError;
+            }
         }
 
-        PageTable* l3Table = GetPageTableFromPhysicalAddress(entryForL3 & PHYSICAL_ADDRESS_MASK, _isCurrentlyActive);
+        PageTable* l3Table = GetPageTableFromPhysicalAddress(entryForL3 & PHYSICAL_ADDRESS_MASK);
         if (l3Table == null)
         {
             return PageError.UnknownError;
@@ -116,12 +87,19 @@ public readonly unsafe struct X64Paging : IPagingImplementation
             }
 
             RawMemory.MemSet(
-                GetPageTableFromPhysicalAddress(physAddr, _isCurrentlyActive), 0, PagingManager.PAGE_TABLE_SIZE);
+                GetPageTableFromPhysicalAddress(physAddr), 0, PagingManager.PAGE_TABLE_SIZE);
             entryForL2 = ConstructTableEntry(physAddr, NON_TERMINAL_PAGE_TABLE_FLAGS);
             l3Table->Entries[l3Idx] = entryForL2;
+
+            //identity-map self
+            PageError pgError = MapPage(physAddr, physAddr, NON_TERMINAL_PAGE_TABLE_FLAGS);
+            if (pgError != PageError.Success)
+            {
+                return pgError;
+            }
         }
 
-        PageTable* l2Table = GetPageTableFromPhysicalAddress(entryForL2 & PHYSICAL_ADDRESS_MASK, _isCurrentlyActive);
+        PageTable* l2Table = GetPageTableFromPhysicalAddress(entryForL2 & PHYSICAL_ADDRESS_MASK);
         if (l2Table == null)
         {
             return PageError.UnknownError;
@@ -137,12 +115,19 @@ public readonly unsafe struct X64Paging : IPagingImplementation
             }
 
             RawMemory.MemSet(
-                GetPageTableFromPhysicalAddress(physAddr, _isCurrentlyActive), 0, PagingManager.PAGE_TABLE_SIZE);
+                GetPageTableFromPhysicalAddress(physAddr), 0, PagingManager.PAGE_TABLE_SIZE);
             entryForL1 = ConstructTableEntry(physAddr, NON_TERMINAL_PAGE_TABLE_FLAGS);
             l2Table->Entries[l2Idx] = entryForL1;
+
+            //identity-map self
+            PageError pgError = MapPage(physAddr, physAddr, NON_TERMINAL_PAGE_TABLE_FLAGS);
+            if (pgError != PageError.Success)
+            {
+                return pgError;
+            }
         }
 
-        PageTable* l1Table = GetPageTableFromPhysicalAddress(entryForL1 & PHYSICAL_ADDRESS_MASK, _isCurrentlyActive);
+        PageTable* l1Table = GetPageTableFromPhysicalAddress(entryForL1 & PHYSICAL_ADDRESS_MASK);
         if (l1Table == null)
         {
             return PageError.UnknownError;
@@ -176,32 +161,38 @@ public readonly unsafe struct X64Paging : IPagingImplementation
 
     public ulong VirtualToPhysical(ulong virtualAddress)
     {
-        if (virtualAddress >= PagingManager.PHYSICAL_MEMORY_OFFSET)
-        {
-            return virtualAddress - PagingManager.PHYSICAL_MEMORY_OFFSET;
-        }
+        ulong l4Idx = (virtualAddress >> P4_SHIFT) & INDEX_MASK;
+        ulong l3Idx = (virtualAddress >> P3_SHIFT) & INDEX_MASK;
+        ulong l2Idx = (virtualAddress >> P2_SHIFT) & INDEX_MASK;
+        ulong l1Idx = (virtualAddress >> P1_SHIFT) & INDEX_MASK;
 
-        return virtualAddress;
-    }
-
-    public ulong PhysicalToVirtual(ulong physicalAddress)
-    {
-        if (physicalAddress >= PagingManager.PHYSICAL_MEMORY_OFFSET)
+        ulong entryForL3 = _rootPageTable->Entries[l4Idx];
+        if (entryForL3 == 0)
         {
             return 0;
         }
 
-        return physicalAddress + PagingManager.PHYSICAL_MEMORY_OFFSET;
+        PageTable* l3Table = GetPageTableFromPhysicalAddress(entryForL3 & PHYSICAL_ADDRESS_MASK);
+        ulong entryForL2 = l3Table->Entries[l3Idx];
+        if (entryForL2 == 0)
+        {
+            return 0;
+        }
+
+        PageTable* l2Table = GetPageTableFromPhysicalAddress(entryForL2 & PHYSICAL_ADDRESS_MASK);
+        ulong entryForL1 = l2Table->Entries[l2Idx];
+        if (entryForL1 == 0)
+        {
+            return 0;
+        }
+
+        PageTable* l1Table = GetPageTableFromPhysicalAddress(entryForL1 & PHYSICAL_ADDRESS_MASK);
+        return l1Table->Entries[l1Idx];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private PageTable* GetPageTableFromPhysicalAddress(ulong physicalAddress, bool isCurrentlyActive)
+    private static PageTable* GetPageTableFromPhysicalAddress(ulong physicalAddress)
     {
-        if (isCurrentlyActive)
-        {
-            return (PageTable*)PhysicalToVirtual(physicalAddress);
-        }
-
         return (PageTable*)physicalAddress;
     }
 
@@ -222,11 +213,6 @@ public readonly unsafe struct X64Paging : IPagingImplementation
         if ((flags & PageFlags.WritePermission) != PageFlags.None)
         {
             x64PageFlags |= X64PageFlags.WriteEnable;
-        }
-
-        if ((flags & PageFlags.IsHugePage) != PageFlags.None)
-        {
-            x64PageFlags |= X64PageFlags.HugePage;
         }
 
         if ((flags & PageFlags.ExecutePermission) == PageFlags.None)

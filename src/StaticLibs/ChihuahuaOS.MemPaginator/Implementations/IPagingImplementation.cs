@@ -11,6 +11,4 @@ internal interface IPagingImplementation
     ulong GetRootPageTablePhysicalAddress();
 
     ulong VirtualToPhysical(ulong virtualAddress);
-
-    ulong PhysicalToVirtual(ulong physicalAddress);
 }

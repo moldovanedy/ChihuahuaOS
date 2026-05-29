@@ -109,12 +109,12 @@ public unsafe struct IntPtr
         return false;
     }
 
-    public override string ToString()
+    public readonly override string ToString()
     {
         return NumberParser.ParseInteger(this);
     }
 
-    public string ToString(string format)
+    public readonly string ToString(string format)
     {
         if (string.IsNullOrEmpty(format))
         {

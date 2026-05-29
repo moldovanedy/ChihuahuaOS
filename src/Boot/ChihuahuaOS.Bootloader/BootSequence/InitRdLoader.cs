@@ -72,7 +72,7 @@ public static unsafe class InitRdLoader
     {
         EfiStatus status = bs->AllocatePages(
             EfiAllocateType.AllocateAnyPages,
-            EfiMemoryType.EfiLoaderData,
+            EfiMemoryType.ChihuahuaInitRdMemory,
             requiredPages,
             physicalAddress);
 
