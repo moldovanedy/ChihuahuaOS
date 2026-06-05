@@ -44,7 +44,7 @@ internal unsafe class StartupCodeHelpers
 #if UEFI
         CoreLibManager.Panic("Fail fast called".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Fail fast called"u8);
+        CoreLibManager.Panic((byte*)"Fail fast called\0"u8);
 #endif
     }
 
@@ -64,7 +64,7 @@ internal unsafe class StartupCodeHelpers
 #if UEFI
             CoreLibManager.Panic("RhpNewArray Bad numElements".ToCharPtrUnsafe());
 #else
-            CoreLibManager.Panic((byte*)"RhpNewArray Bad numElements"u8);
+            CoreLibManager.Panic((byte*)"RhpNewArray Bad numElements\0"u8);
 #endif
         }
 
@@ -82,7 +82,7 @@ internal unsafe class StartupCodeHelpers
 #if UEFI
             CoreLibManager.Panic("RhpNewArrayFast Bad numElements".ToCharPtrUnsafe());
 #else
-            CoreLibManager.Panic((byte*)"RhpNewArrayFast Bad numElements"u8);
+            CoreLibManager.Panic((byte*)"RhpNewArrayFast Bad numElements\0"u8);
 #endif
         }
 
@@ -100,7 +100,7 @@ internal unsafe class StartupCodeHelpers
 #if UEFI
             CoreLibManager.Panic("RhpNewPtrArrayFast Bad numElements".ToCharPtrUnsafe());
 #else
-            CoreLibManager.Panic((byte*)"RhpNewPtrArrayFast Bad numElements"u8);
+            CoreLibManager.Panic((byte*)"RhpNewPtrArrayFast Bad numElements\0"u8);
 #endif
         }
 
@@ -127,7 +127,7 @@ internal unsafe class StartupCodeHelpers
 #if UEFI
             CoreLibManager.Panic("Assertion failed".ToCharPtrUnsafe()); /* covariance */
 #else
-            CoreLibManager.Panic((byte*)"Assertion failed"u8); /* covariance */
+            CoreLibManager.Panic((byte*)"Assertion failed\0"u8); /* covariance */
 #endif
         }
 
@@ -180,7 +180,7 @@ internal unsafe class StartupCodeHelpers
 #if UEFI
         CoreLibManager.Panic("RhpInitialDynamicInterfaceDispatch called".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"RhpInitialDynamicInterfaceDispatch called"u8);
+        CoreLibManager.Panic((byte*)"RhpInitialDynamicInterfaceDispatch called\0"u8);
 #endif
     }
 

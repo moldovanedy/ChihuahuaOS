@@ -19,8 +19,7 @@ internal static class SegmentLoader
 
         if (
             progHeader.Offset >= (ulong)data.Length
-            || progHeader.Offset + progHeader.SizeInFile >= (ulong)data.Length
-            || progHeader.Offset + progHeader.SizeInMemory >= (ulong)data.Length)
+            || progHeader.Offset + progHeader.SizeInFile >= (ulong)data.Length)
         {
             return ElfError.SizeExceeded;
         }

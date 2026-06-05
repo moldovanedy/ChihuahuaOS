@@ -1,5 +1,8 @@
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using ChihuahuaOS.CoreLib;
+using ChihuahuaOS.CoreLib.Extra;
 
 namespace ChihuahuaOS.Kernel.MemoryManager.PMM;
 
@@ -36,7 +39,8 @@ internal unsafe partial struct ChunkLevel2
             ulong physAddress = _descriptors[i].Entry & Level1Descriptor.PHYSICAL_ADDRESS_MASK;
 
             _descriptors[i].Entry |= (ulong)Level1Descriptor.Flags.Locked;
-            long offset = (*(ChunkLevel1*)physAddress).Allocate(blockSize);
+            long offset = ((ChunkLevel1*)physAddress)->Allocate(blockSize);
+            _descriptors[i].RemainingSize -= blockSize;
             _descriptors[i].Entry &= ~(ulong)Level1Descriptor.Flags.Locked;
 
             if (offset >= 0)
@@ -46,6 +50,72 @@ internal unsafe partial struct ChunkLevel2
         }
 
         return -1;
+    }
+
+    public void Deallocate(long blockSize, long blockOffset)
+    {
+        if (blockSize > 1 << 30)
+        {
+            return;
+        }
+
+        int descriptorIndex = (int)(blockOffset / (1 << 30));
+        if (descriptorIndex < 0 || descriptorIndex >= NUM_DESCRIPTORS)
+        {
+            return;
+        }
+
+        if (_descriptors[descriptorIndex].Entry == 0)
+        {
+            return;
+        }
+
+        ulong physAddress = _descriptors[descriptorIndex].Entry & Level1Descriptor.PHYSICAL_ADDRESS_MASK;
+
+        _descriptors[descriptorIndex].Entry |= (ulong)Level1Descriptor.Flags.Locked;
+        ((ChunkLevel1*)physAddress)->Deallocate(blockSize, blockOffset);
+        _descriptors[descriptorIndex].RemainingSize += blockSize;
+        _descriptors[descriptorIndex].Entry &= ~(ulong)Level1Descriptor.Flags.Locked;
+    }
+
+    internal void SetInitiallyAllocatedBits(long blockSize, long blockOffset)
+    {
+        while (blockSize > 0)
+        {
+            int descriptorIndex = (int)(blockOffset / (1 << 30));
+            if (descriptorIndex < 0 || descriptorIndex >= NUM_DESCRIPTORS)
+            {
+                return;
+            }
+
+            if (_descriptors[descriptorIndex].Entry == 0)
+            {
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("FATAL ERROR: PMM: Initialize: Descriptor was null. Descriptor index: \0"u8);
+
+                // ReSharper disable once StackAllocInsideLoop
+                Span<byte> buffer = stackalloc byte[NumberParserNoAlloc.MAX_SYMBOLS_BASE_10];
+                NumberParserNoAlloc.ParseInteger(descriptorIndex, buffer);
+                ReadOnlySpan<byte> stringBuffer = buffer;
+                Console.WriteLine(stringBuffer);
+
+                CoreLibManager.Panic((byte*)"A descriptor was null\0"u8);
+                return;
+            }
+
+            ulong physAddress = _descriptors[descriptorIndex].Entry & Level1Descriptor.PHYSICAL_ADDRESS_MASK;
+
+            //NOTE: this normally always runs in a single-threaded environment, so no need to set locks, but we do it
+            // anyway for consistency
+            _descriptors[descriptorIndex].Entry |= (ulong)Level1Descriptor.Flags.Locked;
+            ((ChunkLevel1*)physAddress)->SetInitiallyAllocatedBits(blockSize, blockOffset);
+            _descriptors[descriptorIndex].RemainingSize -= blockSize;
+            _descriptors[descriptorIndex].Entry &= ~(ulong)Level1Descriptor.Flags.Locked;
+
+            blockSize /= 1 << 30;
+            blockOffset += 1 << 30;
+        }
     }
 }
 

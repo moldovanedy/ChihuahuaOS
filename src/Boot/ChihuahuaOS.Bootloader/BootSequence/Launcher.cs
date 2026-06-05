@@ -9,7 +9,6 @@ using ChihuahuaOS.EfiApi.BootServices;
 using ChihuahuaOS.Elf;
 using ChihuahuaOS.Elf.FileHeader;
 using ChihuahuaOS.Elf.ProgramHeader;
-using ChihuahuaOS.Elf.SectionHeader;
 using ChihuahuaOS.MemPaginator;
 using ChihuahuaOS.MinimalUtils;
 using ChihuahuaOS.MinimalUtils.Toml;
@@ -350,7 +349,6 @@ public static unsafe class Launcher
         kernelEntryPoint = elfHeaderOpt.Value.EntryPoint;
 
         ElfProgramHeader[]? progHeaders = null;
-        ElfSectionHeader[]? sectionHeaders = null;
         try
         {
             progHeaders = elfLoader.GetProgramHeaders(out error);
@@ -366,23 +364,16 @@ public static unsafe class Launcher
 
             for (int i = 0; i < progHeaders.Length; i++)
             {
-                elfLoader.LoadExecutableSegment(ref progHeaders[i], allocator);
-            }
-
-            sectionHeaders = elfLoader.GetSectionHeaders(out error);
-            if (error != ElfError.Success || sectionHeaders == null)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                using string errString = ((int)error).ToString();
-                Console.WriteLine(
-                    "FATAL ERROR: Could not read kernel executable section headers! Error code: " + errString);
-                Console.ForegroundColor = ConsoleColor.White;
-                return false;
-            }
-
-            for (int i = 0; i < sectionHeaders.Length; i++)
-            {
-                elfLoader.LoadSection(ref sectionHeaders[i], allocator);
+                error = elfLoader.LoadExecutableSegment(ref progHeaders[i], allocator);
+                if (error != ElfError.Success && error != ElfError.ElfSectionNotLoadable)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    using string errString = ((int)error).ToString();
+                    Console.WriteLine(
+                        "FATAL ERROR: Could not load kernel executable program headers! Error code: " + errString);
+                    Console.ForegroundColor = ConsoleColor.White;
+                    return false;
+                }
             }
 
             return true;
@@ -390,7 +381,6 @@ public static unsafe class Launcher
         finally
         {
             progHeaders?.Dispose();
-            sectionHeaders?.Dispose();
         }
     }
 

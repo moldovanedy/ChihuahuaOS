@@ -3,7 +3,9 @@ using System.Runtime.InteropServices;
 using ChihuahuaOS.BootParams;
 using ChihuahuaOS.CoreLib;
 using ChihuahuaOS.Kernel.FramebufferManager;
+using ChihuahuaOS.Kernel.MemoryManager;
 using ChihuahuaOS.Kernel.MemoryManager.PMM;
+using ChihuahuaOS.Kernel.MemoryManager.VMM;
 using ChihuahuaOS.MemPaginator;
 using ChihuahuaOS.MinimalUtils;
 
@@ -12,7 +14,6 @@ namespace ChihuahuaOS.Kernel;
 internal static unsafe class Program
 {
     internal static KParams* KernelParamsPtr { get; set; }
-    internal static PhysicalMemManager Pmm { get; private set; }
 
     internal static void Main()
     {
@@ -33,13 +34,22 @@ internal static unsafe class Program
             KernelParamsPtr->EfiMemMapEntrySize);
         efiMap.Sort();
 
-        PmmPageFrameAllocator.SetFreeKernelMemoryStart(KernelParamsPtr->FreeMemChunkPhysicalAddress);
-        PagingManager pagingManager = new(
+        PagingManager kPagingManager = new(
             (PageTable*)PagingManager.GetRootPageTableInitial(),
             &PmmPageFrameAllocator.AllocPageFramesRaw);
+        MainMemManager.KernelSetupPagingManager(ref kPagingManager);
 
-        Pmm = new PhysicalMemManager(pagingManager, efiMap);
-        Console.WriteLine("Setup physical memory manager\0"u8);
+        PmmPageFrameAllocator.SetFreeKernelMemoryStart(KernelParamsPtr->FreeMemChunkPhysicalAddress);
+        PhysicalMemManager pmm = new(kPagingManager, efiMap);
+        MainMemManager.KernelSetupPmm(ref pmm);
+        Console.WriteLine("Setup physical memory manager (PMM)\0"u8);
+
+        MainMemManager.Pmm.InitializeFromEfiMap(efiMap);
+        Console.WriteLine("Initialized PMM from EFI memory map\0"u8);
+
+        VirtualMemManager vmm = new(kPagingManager);
+        Console.WriteLine("Setup virtual memory manager (VMM)\0"u8);
+        MainMemManager.KernelSetupVmm(ref vmm);
 
         Console.ForegroundColor = ConsoleColor.Magenta;
         Console.WriteLine("System stopped, you can safely shut down the device.\0"u8);

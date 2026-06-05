@@ -8,7 +8,19 @@
         <PropertyGroup>
             <ObjOutputPath>$(IntermediateOutputPath)$(TargetName).o</ObjOutputPath>
             <PublishSubDir>$(OutputPath)publish/</PublishSubDir>
-            <IlcArgs>--targetos linux --targetarch x64 --systemmodule ChihuahuaOS.CoreLib --nativelib</IlcArgs>
+            <IlcArgs>--targetos linux --targetarch x64 --systemmodule ChihuahuaOS.CoreLib --export-unmanaged-entrypoints</IlcArgs>
+        </PropertyGroup>
+        
+        <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+            <IlcArgs>$(IlcArgs) -g</IlcArgs>
+        </PropertyGroup>
+
+        <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+            <IlcArgs>$(IlcArgs) -O</IlcArgs>
+        </PropertyGroup>
+
+        <PropertyGroup Condition="'$(OutputType)' != 'Exe'">
+            <IlcArgs>$(IlcArgs) --nativelib</IlcArgs>
         </PropertyGroup>
 
         <ItemGroup>
@@ -26,6 +38,12 @@
             Command="ilc -o &quot;$(ObjOutputPath)&quot; @(IlcReferences->'&quot;%(Identity)&quot;', ' ') $(IlcArgs)" 
             WorkingDirectory="$(ProjectDir)" />
         <Copy DestinationFolder="$(PublishSubDir)" SourceFiles="$(ObjOutputPath)" />
+
+        <!-- copy debug info to another file -->
+        <Exec
+            Condition="'$(Configuration)' == 'Debug' and '$(OutputType)' == 'Exe'"
+            Command="objcopy --only-keep-debug $(TargetName).o $(TargetName).dbg"
+            WorkingDirectory="$(PublishSubDir)" />
     </Target>
 
     <Target 
@@ -52,6 +70,11 @@
 
         <Message Importance="high" Text="Linking executable &quot;$(AppFinalOutputPath)&quot;..." />
         <Exec Command="ld.lld $(LldArgs)" WorkingDirectory="$(ProjectDir)" />
+        
+        <!-- strip unnecessary info -->
+        <Exec
+            Command="llvm-strip --strip-debug --strip-unneeded $(AppFinalOutputPath)"
+            WorkingDirectory="$(ProjectDir)" />
     </Target>
     
     <Target Name="CleanupIntermediates" AfterTargets="AfterCompile" Condition="'$(Configuration)' == 'Release'">

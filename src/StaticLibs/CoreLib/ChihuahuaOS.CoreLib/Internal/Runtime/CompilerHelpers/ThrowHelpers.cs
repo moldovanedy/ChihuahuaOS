@@ -9,7 +9,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Argument exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Argument exception"u8);
+        CoreLibManager.Panic((byte*)"Argument exception\0"u8);
 #endif
     }
 
@@ -18,7 +18,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Invalid operation exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Invalid operation exception"u8);
+        CoreLibManager.Panic((byte*)"Invalid operation exception\0"u8);
 #endif
     }
 
@@ -27,7 +27,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Invalid cast exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Invalid cast exception"u8);
+        CoreLibManager.Panic((byte*)"Invalid cast exception\0"u8);
 #endif
     }
 
@@ -36,7 +36,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Overflow exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Overflow exception"u8);
+        CoreLibManager.Panic((byte*)"Overflow exception\0"u8);
 #endif
     }
 
@@ -45,7 +45,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Format exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Format exception"u8);
+        CoreLibManager.Panic((byte*)"Format exception\0"u8);
 #endif
     }
 
@@ -54,7 +54,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Argument out of range exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Argument out of range"u8);
+        CoreLibManager.Panic((byte*)"Argument out of range\0"u8);
 #endif
     }
 
@@ -63,7 +63,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Null reference exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Null reference exception"u8);
+        CoreLibManager.Panic((byte*)"Null reference exception\0"u8);
 #endif
     }
 
@@ -72,7 +72,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Index out of range exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Index out of range"u8);
+        CoreLibManager.Panic((byte*)"Index out of range\0"u8);
 #endif
     }
 
@@ -81,7 +81,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Divide by zero exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Divide by zero exception"u8);
+        CoreLibManager.Panic((byte*)"Divide by zero exception\0"u8);
 #endif
     }
 
@@ -90,7 +90,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Platform not supported exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Platform not supported exception"u8);
+        CoreLibManager.Panic((byte*)"Platform not supported exception\0"u8);
 #endif
     }
 
@@ -99,7 +99,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Not implemented exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Not implemented exception"u8);
+        CoreLibManager.Panic((byte*)"Not implemented exception\0"u8);
 #endif
     }
 
@@ -108,7 +108,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Invalid program exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Invalid program exception"u8);
+        CoreLibManager.Panic((byte*)"Invalid program exception\0"u8);
 #endif
     }
 
@@ -117,7 +117,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Stream exception".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Stream exception"u8);
+        CoreLibManager.Panic((byte*)"Stream exception\0"u8);
 #endif
     }
 
@@ -126,7 +126,7 @@ public static unsafe class ThrowHelpers
 #if UEFI
         CoreLibManager.Panic("Invalid program exception with argument".ToCharPtrUnsafe());
 #else
-        CoreLibManager.Panic((byte*)"Invalid program exception with argument"u8);
+        CoreLibManager.Panic((byte*)"Invalid program exception with argument\0"u8);
 #endif
     }
 }

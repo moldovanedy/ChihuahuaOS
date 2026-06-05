@@ -30,7 +30,7 @@ public abstract class MemberInfo : ICustomAttributeProvider
 #else
         unsafe
         {
-            CoreLibManager.Panic((byte*)"MemberInfo.HasSameMetadataDefinitionAs called"u8);
+            CoreLibManager.Panic((byte*)"MemberInfo.HasSameMetadataDefinitionAs called\0"u8);
         }
 #endif
         return false;

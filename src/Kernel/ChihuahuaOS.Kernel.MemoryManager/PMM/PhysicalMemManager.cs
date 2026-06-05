@@ -21,6 +21,35 @@ public unsafe struct PhysicalMemManager
         return _rootChunkPtr->Allocate(blockSize);
     }
 
+    public void Deallocate(long blockSize, long blockOffset)
+    {
+        _rootChunkPtr->Deallocate(blockSize, blockOffset);
+    }
+
+    public void InitializeFromEfiMap(EfiMapWrapper efiMap)
+    {
+        //definitely set the first chunk as allocated, as it contains the physical address 0, which we treat as invalid
+        // and will cause all sorts of issues later, so it's better to waste max. 32 KiB than to handle separate cases
+        // for address 0
+        _rootChunkPtr->SetInitiallyAllocatedBits(ChunkLevel1.MIN_CHUNK_SIZE, 0);
+
+        for (int i = 0; i < efiMap.ArrayLength; i++)
+        {
+            if (efiMap[i].Type.IsAvailable())
+            {
+                continue;
+            }
+
+            //the number of pages refers to 4 KiB pages, but we need 32 KiB chinks, so we divide by 8,
+            // but with an extra chunk to accomodate for the number of pages indivisible by the chunk's min. size 
+            long blockSize = (long)((efiMap[i].NumberOfPages + 7) / 8 * ChunkLevel1.MIN_CHUNK_SIZE);
+
+            //align the offset on 32 KiB chunks
+            long blockOffset = (long)efiMap[i].PhysicalStart / ChunkLevel1.MIN_CHUNK_SIZE * ChunkLevel1.MIN_CHUNK_SIZE;
+            _rootChunkPtr->SetInitiallyAllocatedBits(blockSize, blockOffset);
+        }
+    }
+
 
     private void InitDescriptors(PagingManager pagingManager, EfiMapWrapper efiMap)
     {
@@ -53,6 +82,7 @@ public unsafe struct PhysicalMemManager
                 continue;
             }
 
+            ulong physicalAddress = descriptor.PhysicalStart;
             ulong numFreePages = descriptor.NumberOfPages;
             if (chunkLevel2Ptr == null && numFreePages >= chunkLevel2RequiredPages)
             {
@@ -61,7 +91,7 @@ public unsafe struct PhysicalMemManager
                 for (ulong j = 0; j < chunkLevel2RequiredPages; j++)
                 {
                     PageError pgError = pagingManager.IdentityMapPage(
-                        descriptor.PhysicalStart + j * EfiConstants.EFI_PAGE_SIZE,
+                        physicalAddress + j * EfiConstants.EFI_PAGE_SIZE,
                         PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
                     if (pgError != PageError.Success)
                     {
@@ -77,17 +107,18 @@ public unsafe struct PhysicalMemManager
                 PageError error = pagingManager.SubmitChanges();
                 if (error != PageError.Success)
                 {
-                    CoreLibManager.Panic((byte*)"PMM: Could not submit paging changes; state corrupted"u8);
+                    CoreLibManager.Panic((byte*)"PMM: Could not submit paging changes; state corrupted\0"u8);
                     return null;
                 }
 
                 RawMemory.MemSet(
-                    (void*)descriptor.PhysicalStart, 0, chunkLevel2RequiredPages * EfiConstants.EFI_PAGE_SIZE);
+                    (void*)physicalAddress, 0, chunkLevel2RequiredPages * EfiConstants.EFI_PAGE_SIZE);
 
                 //then write the descriptor
-                chunkLevel2Ptr = (ChunkLevel2*)descriptor.PhysicalStart;
+                chunkLevel2Ptr = (ChunkLevel2*)physicalAddress;
                 *chunkLevel2Ptr = new ChunkLevel2();
                 numFreePages -= chunkLevel2RequiredPages;
+                physicalAddress += chunkLevel2RequiredPages * EfiConstants.EFI_PAGE_SIZE;
             }
 
             if (chunkLevel2Ptr == null)
@@ -97,7 +128,6 @@ public unsafe struct PhysicalMemManager
 
             //we try to write all the level 1 chunks in the same region; if we can't, we simply go to the next region
             // and try there as well
-            ulong physicalAddress = descriptor.PhysicalStart;
             while (numFreePages >= chunkLevel1RequiredPages && numLevel1ChunksMapped < numLevel1ChunksRequired)
             {
                 //the same as before (map the region, then write into it)
@@ -121,7 +151,7 @@ public unsafe struct PhysicalMemManager
                 PageError error = pagingManager.SubmitChanges();
                 if (error != PageError.Success)
                 {
-                    CoreLibManager.Panic((byte*)"PMM: Could not submit paging changes; state corrupted"u8);
+                    CoreLibManager.Panic((byte*)"PMM: Could not submit paging changes; state corrupted\0"u8);
                     return null;
                 }
 
@@ -147,13 +177,13 @@ public unsafe struct PhysicalMemManager
 
         if (chunkLevel2Ptr == null)
         {
-            CoreLibManager.Panic((byte*)"PMM: Could not find free space for root chunk"u8);
+            CoreLibManager.Panic((byte*)"PMM: Could not find free space for root chunk\0"u8);
             return null;
         }
 
         if (numLevel1ChunksMapped < numLevel1ChunksRequired)
         {
-            CoreLibManager.Panic((byte*)"PMM: Could not find free space for all the chunk descriptors"u8);
+            CoreLibManager.Panic((byte*)"PMM: Could not find free space for all the chunk descriptors\0"u8);
             return null;
         }
 

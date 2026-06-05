@@ -27,7 +27,7 @@ public readonly unsafe struct UstarReaderNoAlloc
         }
 
         UstarHeader* headerPtr = (UstarHeader*)_rawData;
-        while (RawMemory.MemCompare(headerPtr->UstarIdentifier, (byte*)"ustar"u8, 5) == 0)
+        while (RawMemory.MemCompare(headerPtr->UstarIdentifier, (byte*)"ustar\0"u8, 5) == 0)
         {
             //the file size is in octal null-terminated ASCII string, so just 11 characters are needed
             long thisFileSize = UstarHeader.GetOctalNumber(new ReadOnlySpan<byte>(headerPtr->FileSizeOctal, 11));

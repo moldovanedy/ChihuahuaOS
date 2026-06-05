@@ -14,6 +14,7 @@
             <TarArgs>$(TarArgs) @(AssetFiles->'&quot;%(Identity)&quot;', ' ')</TarArgs>
         </PropertyGroup>
 
+        <MakeDir Directories="$(PublishPath)" />
         <Exec Command="tar $(TarArgs)" Condition="'@AssetFiles' != ''" />
     </Target>
 

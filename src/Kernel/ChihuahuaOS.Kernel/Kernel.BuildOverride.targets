@@ -21,5 +21,8 @@
 
         <Message Importance="high" Text="Linking executable &quot;$(AppFinalOutputPath)&quot;..." />
         <Exec Command="ld.lld $(LldArgs)" WorkingDirectory="$(ProjectDir)" />
+
+        <!-- strip unnecessary info -->
+        <Exec Command="llvm-strip --strip-debug --strip-unneeded $(AppFinalOutputPath)" WorkingDirectory="$(ProjectDir)" />
     </Target>
 </Project>
