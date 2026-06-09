@@ -31,7 +31,7 @@ public static unsafe class NumberParserNoAlloc
         int i = 0;
         while (i < MAX_SYMBOLS_BASE_10 && value != 0)
         {
-            digits[MAX_SYMBOLS_BASE_10 - i - 1] = (byte)(Math.Abs(value % 10) + '0');
+            buffer[MAX_SYMBOLS_BASE_10 - i - 1] = (byte)(Math.Abs(value % 10) + '0');
             value /= 10;
             i++;
             len++;
@@ -39,7 +39,7 @@ public static unsafe class NumberParserNoAlloc
 
         if (negative)
         {
-            digits[MAX_SYMBOLS_BASE_10 - i - 1] = (byte)'-';
+            buffer[MAX_SYMBOLS_BASE_10 - i - 1] = (byte)'-';
             len++;
         }
 

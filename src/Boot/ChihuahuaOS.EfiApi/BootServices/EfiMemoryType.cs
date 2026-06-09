@@ -20,10 +20,31 @@ public enum EfiMemoryType : uint
     EfiUnacceptedMemoryType = 15,
     EfiMaxMemoryType = 16,
 
+    /// <summary>
+    /// Memory for the kernel executable (.text, .data, .rodata, etc.). Mapped by the segment descriptors from the
+    /// KParams.
+    /// </summary>
     ChihuahuaKernelMemory = 0x80000000,
+
+    /// <summary>
+    /// Memory for init-ramdisk. Mapped to a randomized high address contained in KParams.
+    /// </summary>
     ChihuahuaInitRdMemory = 0x80000001,
+
+    /// <summary>
+    /// Memory for the page tables themselves. Identity-mapped.
+    /// </summary>
     ChihuahuaPageTables = 0x80000002,
-    ChihuahuaFreeKernelMemory = 0x80000003
+
+    /// <summary>
+    /// A 2 MiB continuous chunk of free memory for the kernel. Identity-mapped.
+    /// </summary>
+    ChihuahuaFreeKernelMemory = 0x80000003,
+
+    /// <summary>
+    /// Memory for the EFI memory map. Identity-mapped.
+    /// </summary>
+    ChihuahuaEfiMemMap = 0x80000004
 }
 
 public static class EfiMemoryTypeExtensions

@@ -10,6 +10,10 @@ public unsafe struct AvlTree
 {
     public AvlTreeNode* Root { get; private set; }
 
+    public ulong HeapEndPointer { get; set; }
+
+    public ulong StackBottomPointer { get; set; }
+
     private ulong LastFreeAvlChunkPhysAddress;
 
     public AvlTree(AvlTreeNode* root)
@@ -19,7 +23,7 @@ public unsafe struct AvlTree
         AvlChunkManager.InitializeNewAvlChunk(root);
     }
 
-    public AvlTreeNode* CreateNode(AvlTreeNode* parentHint)
+    public AvlTreeNode* CreateNode(AvlTreeNode* parentHint, bool isFreeable = true)
     {
         short offset;
         if (parentHint != null && !AvlChunkManager.IsAvlChunkFull(parentHint))
@@ -32,7 +36,7 @@ public unsafe struct AvlTree
             }
 
             AvlTreeNode* nodeArray = AvlChunkManager.GetAvlChunkArrayStart(parentHint);
-            return nodeArray + offset;
+            return Reinitialize(nodeArray + offset);
         }
 
         AvlTreeNode* freeChunkArray;
@@ -47,7 +51,7 @@ public unsafe struct AvlTree
                 return null;
             }
 
-            return freeChunkArray + offset;
+            return Reinitialize(freeChunkArray + offset);
         }
 
         LastFreeAvlChunkPhysAddress = AvlChunkManager.AllocateNewAvlChunk();
@@ -61,19 +65,48 @@ public unsafe struct AvlTree
             return null;
         }
 
-        return freeChunkArray + offset;
+        return Reinitialize(freeChunkArray + offset, isFreeable);
+
+
+        static AvlTreeNode* Reinitialize(AvlTreeNode* newNode, bool isFreeable = true)
+        {
+            newNode->VirtualStart = 0;
+            newNode->PhysicalStart = 0;
+            newNode->Size = 0;
+            newNode->Info = isFreeable ? 0U : 0x100;
+            newNode->Left = null;
+            newNode->Right = null;
+            return newNode;
+        }
     }
 
 
     #region Operations
 
-    public bool TryInsert(ulong virtualAddress, ulong physicalAddress, uint size)
+    // public void Traverse()
+    // {
+    //     TraverseInorder(Root);
+    // }
+    //
+    // public static void TraverseInorder(AvlTreeNode* currentNode)
+    // {
+    //     if (currentNode->Left != null)
+    //     {
+    //         TraverseInorder(currentNode->Left);
+    //     }
+    //
+    //     if (currentNode->Right != null)
+    //     {
+    //         TraverseInorder(currentNode->Right);
+    //     }
+    // }
+
+    public bool TryInsert(ulong virtualAddress, ulong physicalAddress, uint size, bool isFreeable = true)
     {
-        AvlTreeNode* newNode = CreateNode(null);
+        AvlTreeNode* newNode = CreateNode(null, isFreeable);
         newNode->VirtualStart = virtualAddress;
         newNode->PhysicalStart = physicalAddress;
         newNode->Size = size;
-        newNode->Info = 0;
 
         if (Root == null)
         {
@@ -93,6 +126,63 @@ public unsafe struct AvlTree
 
         RetraceInsertion(ancestorPointers, index);
         return true;
+    }
+
+    public bool IsAddressFree(ulong address)
+    {
+        return TryGetFreeAddress(address, address, 0) == address;
+    }
+
+    public ulong TryGetFreeAddress(ulong start, ulong end, ulong size)
+    {
+        AvlTreeNode* current = Root;
+        while (start <= end)
+        {
+            ulong leftLimit = 0;
+            ulong rightLimit = ulong.MaxValue;
+
+            bool needsTryingFurther = false;
+            while (current != null)
+            {
+                if (current->VirtualStart + current->Size <= start)
+                {
+                    leftLimit = current->VirtualStart + current->Size;
+                    current = current->Right;
+                }
+                else if (current->VirtualStart > start + size)
+                {
+                    rightLimit = current->VirtualStart;
+                    current = current->Left;
+                }
+                else
+                {
+                    //this means that the start address is occupied, go further
+                    start = current->VirtualStart + current->Size;
+                    current = Root;
+                    needsTryingFurther = true;
+                    break;
+                }
+            }
+
+            if (needsTryingFurther)
+            {
+                continue;
+            }
+
+            if (rightLimit - leftLimit < size)
+            {
+                //this means that the start address was free, but it wasn't as big as needed, so go further 
+                start = rightLimit;
+                current = Root;
+            }
+            else
+            {
+                //it means there was no current node on the start address, so it is free
+                return start;
+            }
+        }
+
+        return 0;
     }
 
     public void Delete(ulong virtualAddress)

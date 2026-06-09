@@ -23,7 +23,7 @@ internal static unsafe class TextRenderer
     public static void Init()
     {
         UstarReaderNoAlloc rdReader = new(
-            (byte*)KVirtualAddresses.INITRD_BASE,
+            (byte*)Program.KernelParamsPtr->VirtualSpaceInfo.InitRdBase,
             (long)Program.KernelParamsPtr->InitRdSize);
         byte* filePtr = rdReader.GetFilePointer("Assets/Fonts/Uni2_Terminus_8x16_n.psfu\0"u8, out long fileLength);
         if (filePtr == null || fileLength <= 0)
@@ -117,8 +117,8 @@ internal static unsafe class TextRenderer
 
     private static void DrawChar(byte character)
     {
-        uint* fbBase = (uint*)KVirtualAddresses.GOP_BASE;
-        fbBase += Y * _psfHandler.Header.Height * Program.KernelParamsPtr->FramebufferInfo->PixelsPerScanLine;
+        uint* fbBase = (uint*)Program.KernelParamsPtr->VirtualSpaceInfo.GopBase;
+        fbBase += Y * _psfHandler.Header.Height * Framebuffer.Info.PixelsPerScanLine;
         fbBase += X * (_psfHandler.Header.Width + 1);
 
         byte* glyphDataPtr = _psfHandler.GetCharacterDataNoUnicode(character);
@@ -146,7 +146,7 @@ internal static unsafe class TextRenderer
             //draw the BG color on the one px space
             fbBase[0] = bgColorRaw;
 
-            fbBase += Program.KernelParamsPtr->FramebufferInfo->PixelsPerScanLine;
+            fbBase += Framebuffer.Info.PixelsPerScanLine;
             fbBase -= _psfHandler.Header.Width;
         }
     }

@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalisys;
 using System.Runtime.InteropServices;
 
-namespace ChihuahuaOS.MinimalUtils;
+namespace ChihuahuaOS.MinimalUtils.ASM;
 
 public static class SpinLocks
 {

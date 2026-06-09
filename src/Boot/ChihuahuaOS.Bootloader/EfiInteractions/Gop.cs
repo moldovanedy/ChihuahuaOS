@@ -16,7 +16,7 @@ public static unsafe partial class Gop
     /// </summary>
     private static EfiGop* _gop;
 
-    public static bool Remap(PagingManager pagingManager)
+    public static bool Remap(PagingManager pagingManager, KParams* kParams)
     {
         EfiGop* gop = GetOrFindGop();
         if (gop == null)
@@ -25,21 +25,32 @@ public static unsafe partial class Gop
         }
 
         ulong oldBase = (ulong)gop->Mode->FrameBufferBase;
-        ulong pageCount = (gop->Mode->FrameBufferSize + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
-        for (ulong i = 0; i < pageCount; i++)
-        {
-            PageError error = pagingManager.MapPage(
-                oldBase + i * EfiConstants.EFI_PAGE_SIZE,
-                KVirtualAddresses.GOP_BASE + i * EfiConstants.EFI_PAGE_SIZE,
-                PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
+        ulong requiredPages =
+            (gop->Mode->FrameBufferSize + (EfiConstants.EFI_PAGE_SIZE - 1))
+            / EfiConstants.EFI_PAGE_SIZE;
 
-            if (error != PageError.Success)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("FATAL ERROR: Could not remap the framebuffer for use in OS!");
-                Console.ForegroundColor = ConsoleColor.White;
-                return false;
-            }
+        //from the init-ramdisk base, we leave at least 2 pages free, then use a random offset between 0 and 4096 pages
+        ulong baseAddress =
+            kParams->VirtualSpaceInfo.InitRdBase
+            - 2 * EfiConstants.EFI_PAGE_SIZE
+            - EfiConstants.EFI_PAGE_SIZE * requiredPages;
+        baseAddress -= Random.NextMersenne(0, 4096) * EfiConstants.EFI_PAGE_SIZE;
+        kParams->VirtualSpaceInfo.GopBase = baseAddress;
+        kParams->VirtualSpaceInfo.GopLimit = baseAddress + EfiConstants.EFI_PAGE_SIZE * requiredPages;
+
+        PageError error = pagingManager.MapRegion(
+            oldBase,
+            baseAddress,
+            PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission,
+            requiredPages,
+            out _);
+
+        if (error != PageError.Success)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("FATAL ERROR: Could not remap the framebuffer for use in OS!");
+            Console.ForegroundColor = ConsoleColor.White;
+            return false;
         }
 
         return true;

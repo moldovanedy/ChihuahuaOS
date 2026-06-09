@@ -1,7 +1,7 @@
 #if ARCH_X64
 using System.Runtime.InteropServices;
 
-namespace ChihuahuaOS.MemPaginator.Implementations.X64;
+namespace ChihuahuaOS.MemPaginator.ASM.X64;
 
 public static class X64PagingSubmit
 {
@@ -37,7 +37,6 @@ public static class X64PagingSubmit
     private static extern void Paging_InvalidatePage__UefiAbi(ulong virtualAddress);
 
 #else
-
     [DllImport("*")]
     private static extern void Paging_SubmitPageTable__SysVAbi(ulong physicalAddress);
 

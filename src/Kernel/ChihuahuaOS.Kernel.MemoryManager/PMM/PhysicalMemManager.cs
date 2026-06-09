@@ -9,29 +9,29 @@ namespace ChihuahuaOS.Kernel.MemoryManager.PMM;
 
 public unsafe struct PhysicalMemManager
 {
-    private ChunkLevel2* _rootChunkPtr;
+    internal ChunkLevel2* RootChunkPtr { get; private set; }
 
-    public PhysicalMemManager(PagingManager pagingManager, EfiMapWrapper efiMap)
+    public PhysicalMemManager(EfiMapWrapper efiMap)
     {
-        InitDescriptors(pagingManager, efiMap);
+        InitDescriptors(efiMap);
     }
 
     public long Allocate(long blockSize)
     {
-        return _rootChunkPtr->Allocate(blockSize);
+        return RootChunkPtr->Allocate(blockSize);
     }
 
     public void Deallocate(long blockSize, long blockOffset)
     {
-        _rootChunkPtr->Deallocate(blockSize, blockOffset);
+        RootChunkPtr->Deallocate(blockSize, blockOffset);
     }
 
     public void InitializeFromEfiMap(EfiMapWrapper efiMap)
     {
-        //definitely set the first chunk as allocated, as it contains the physical address 0, which we treat as invalid
-        // and will cause all sorts of issues later, so it's better to waste max. 32 KiB than to handle separate cases
-        // for address 0
-        _rootChunkPtr->SetInitiallyAllocatedBits(ChunkLevel1.MIN_CHUNK_SIZE, 0);
+        //definitely set the first chunk as allocated, as it contains the physical address 0, which we treat as invalid;
+        // otherwise it will cause all sorts of issues later, so it's better to waste max. 32 KiB than to handle
+        // separate cases for address 0
+        RootChunkPtr->SetInitiallyAllocatedBits(ChunkLevel1.MIN_CHUNK_SIZE, 0);
 
         for (int i = 0; i < efiMap.ArrayLength; i++)
         {
@@ -46,17 +46,17 @@ public unsafe struct PhysicalMemManager
 
             //align the offset on 32 KiB chunks
             long blockOffset = (long)efiMap[i].PhysicalStart / ChunkLevel1.MIN_CHUNK_SIZE * ChunkLevel1.MIN_CHUNK_SIZE;
-            _rootChunkPtr->SetInitiallyAllocatedBits(blockSize, blockOffset);
+            RootChunkPtr->SetInitiallyAllocatedBits(blockSize, blockOffset);
         }
     }
 
 
-    private void InitDescriptors(PagingManager pagingManager, EfiMapWrapper efiMap)
+    private void InitDescriptors(EfiMapWrapper efiMap)
     {
-        _rootChunkPtr = WriteDescriptors(pagingManager, efiMap);
+        RootChunkPtr = WriteDescriptors(efiMap);
     }
 
-    private static ChunkLevel2* WriteDescriptors(PagingManager pagingManager, EfiMapWrapper efiMap)
+    private ChunkLevel2* WriteDescriptors(EfiMapWrapper efiMap)
     {
         ulong chunkLevel2RequiredPages =
             (ulong)(sizeof(ChunkLevel2) + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
@@ -88,27 +88,19 @@ public unsafe struct PhysicalMemManager
             {
                 //firstly, map the region
                 bool success = true;
-                for (ulong j = 0; j < chunkLevel2RequiredPages; j++)
+                PageError error = MainMemManager.KPagingManager.IdentityMapRegion(
+                    physicalAddress,
+                    PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission,
+                    chunkLevel2RequiredPages,
+                    out _);
+                if (error != PageError.Success)
                 {
-                    PageError pgError = pagingManager.IdentityMapPage(
-                        physicalAddress + j * EfiConstants.EFI_PAGE_SIZE,
-                        PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
-                    if (pgError != PageError.Success)
-                    {
-                        success = false;
-                    }
+                    success = false;
                 }
 
                 if (!success)
                 {
                     continue;
-                }
-
-                PageError error = pagingManager.SubmitChanges();
-                if (error != PageError.Success)
-                {
-                    CoreLibManager.Panic((byte*)"PMM: Could not submit paging changes; state corrupted\0"u8);
-                    return null;
                 }
 
                 RawMemory.MemSet(
@@ -132,27 +124,19 @@ public unsafe struct PhysicalMemManager
             {
                 //the same as before (map the region, then write into it)
                 bool success = true;
-                for (ulong j = 0; j < chunkLevel1RequiredPages; j++)
+                PageError error = MainMemManager.KPagingManager.IdentityMapRegion(
+                    physicalAddress,
+                    PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission,
+                    chunkLevel1RequiredPages,
+                    out _);
+                if (error != PageError.Success)
                 {
-                    PageError pgError = pagingManager.IdentityMapPage(
-                        physicalAddress + j * EfiConstants.EFI_PAGE_SIZE,
-                        PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
-                    if (pgError != PageError.Success)
-                    {
-                        success = false;
-                    }
+                    success = false;
                 }
 
                 if (!success)
                 {
                     continue;
-                }
-
-                PageError error = pagingManager.SubmitChanges();
-                if (error != PageError.Success)
-                {
-                    CoreLibManager.Panic((byte*)"PMM: Could not submit paging changes; state corrupted\0"u8);
-                    return null;
                 }
 
                 RawMemory.MemSet(

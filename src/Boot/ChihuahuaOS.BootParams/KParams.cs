@@ -4,10 +4,14 @@ using ChihuahuaOS.EfiApi.BootServices;
 
 namespace ChihuahuaOS.BootParams;
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct KParams
 {
-    public FbInfo* FramebufferInfo;
+    public FbInfo FramebufferInfo;
+
+    public VirtualAddressesInfo VirtualSpaceInfo;
+
+    public KernelExecutableInfo KernelExecInfo;
 
     /// <summary>
     /// The EFI memory map itself.

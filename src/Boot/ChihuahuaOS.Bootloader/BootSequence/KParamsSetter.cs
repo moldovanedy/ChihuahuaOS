@@ -12,7 +12,12 @@ namespace ChihuahuaOS.Bootloader.BootSequence;
 
 internal static unsafe class KParamsSetter
 {
-    public static bool Setup(EfiBootServices* bs, PagingManager pagingManager, out KParams* kParams)
+    public static bool Setup(
+        EfiBootServices* bs,
+        PagingManager pagingManager,
+        Span<KernelExecutableInfo.SegmentDescriptor> segmentDescriptors,
+        int numSegmentDescriptors,
+        out KParams* kParams)
     {
         kParams = null;
         ulong physicalAddress = 0;
@@ -50,8 +55,20 @@ internal static unsafe class KParamsSetter
         kParams = (KParams*)physicalAddress;
         *kParams = new KParams();
 
-        FbInfo* fbInfoPtr = (FbInfo*)((byte*)kParams + sizeof(KParams));
-        bool success = SetFramebufferInfo(fbInfoPtr);
+        //set the segment descriptors
+        kParams->KernelExecInfo = new KernelExecutableInfo
+        {
+            SegmentsDescriptorsArray =
+                (KernelExecutableInfo.SegmentDescriptor*)(physicalAddress + (ulong)sizeof(KParams)),
+            NumSegmentsLoaded = numSegmentDescriptors
+        };
+        for (int i = 0; i < numSegmentDescriptors; i++)
+        {
+            kParams->KernelExecInfo.SegmentsDescriptorsArray[i] = segmentDescriptors[i];
+        }
+
+        FbInfo fbInfo = new();
+        bool success = SetFramebufferInfo(ref fbInfo);
         if (!success)
         {
             return false;
@@ -63,12 +80,14 @@ internal static unsafe class KParamsSetter
             return false;
         }
 
-        kParams->FramebufferInfo = fbInfoPtr;
+
+        kParams->FramebufferInfo = fbInfo;
+        kParams->VirtualSpaceInfo = new VirtualAddressesInfo();
         kParams->FreeMemChunkPhysicalAddress = freeKMemoryPhysAddress;
         return true;
     }
 
-    private static bool SetFramebufferInfo(FbInfo* fbInfoPtr)
+    private static bool SetFramebufferInfo(ref FbInfo fbInfo)
     {
         EfiGopMode? gopModeOpt = Gop.GetCurrentMode();
         if (gopModeOpt == null || gopModeOpt.Value.Info == null)
@@ -81,35 +100,34 @@ internal static unsafe class KParamsSetter
         }
 
         EfiGopMode gopMode = gopModeOpt.Value;
-        *fbInfoPtr = new FbInfo();
-        fbInfoPtr->Width = gopMode.Info->HorizontalResolution;
-        fbInfoPtr->Height = gopMode.Info->VerticalResolution;
-        fbInfoPtr->PixelsPerScanLine = gopMode.Info->PixelsPerScanLine;
+        fbInfo.Width = gopMode.Info->HorizontalResolution;
+        fbInfo.Height = gopMode.Info->VerticalResolution;
+        fbInfo.PixelsPerScanLine = gopMode.Info->PixelsPerScanLine;
 
         switch (gopMode.Info->PixelFormat)
         {
             case EfiGraphicsPixelFormat.PixelRgbReserved8BitPerColor:
             {
-                fbInfoPtr->RedBitmask = 0xFF_00_00_00;
-                fbInfoPtr->GreenBitmask = 0x00_FF_00_00;
-                fbInfoPtr->BlueBitmask = 0x00_00_FF_00;
-                fbInfoPtr->ReservedBitmask = 0x00_00_00_FF;
+                fbInfo.RedBitmask = 0xFF_00_00_00;
+                fbInfo.GreenBitmask = 0x00_FF_00_00;
+                fbInfo.BlueBitmask = 0x00_00_FF_00;
+                fbInfo.ReservedBitmask = 0x00_00_00_FF;
                 break;
             }
             case EfiGraphicsPixelFormat.PixelBgrReserved8BitPerColor:
             {
-                fbInfoPtr->BlueBitmask = 0xFF_00_00_00;
-                fbInfoPtr->GreenBitmask = 0x00_FF_00_00;
-                fbInfoPtr->RedBitmask = 0x00_00_FF_00;
-                fbInfoPtr->ReservedBitmask = 0x00_00_00_FF;
+                fbInfo.BlueBitmask = 0xFF_00_00_00;
+                fbInfo.GreenBitmask = 0x00_FF_00_00;
+                fbInfo.RedBitmask = 0x00_00_FF_00;
+                fbInfo.ReservedBitmask = 0x00_00_00_FF;
                 break;
             }
             case EfiGraphicsPixelFormat.PixelBitMask:
             {
-                fbInfoPtr->RedBitmask = gopMode.Info->PixelInformation.RedBitmask;
-                fbInfoPtr->GreenBitmask = gopMode.Info->PixelInformation.GreenBitmask;
-                fbInfoPtr->BlueBitmask = gopMode.Info->PixelInformation.BlueBitmask;
-                fbInfoPtr->ReservedBitmask = gopMode.Info->PixelInformation.ReservedBitmask;
+                fbInfo.RedBitmask = gopMode.Info->PixelInformation.RedBitmask;
+                fbInfo.GreenBitmask = gopMode.Info->PixelInformation.GreenBitmask;
+                fbInfo.BlueBitmask = gopMode.Info->PixelInformation.BlueBitmask;
+                fbInfo.ReservedBitmask = gopMode.Info->PixelInformation.ReservedBitmask;
                 break;
             }
             default:
@@ -148,21 +166,20 @@ internal static unsafe class KParamsSetter
 
         RawMemory.MemSet((void*)physicalAddress, 0, NUM_PAGES * EfiConstants.EFI_PAGE_SIZE);
 
-        for (ulong i = 0; i < NUM_PAGES; i++)
+        PageError pageError = pagingManager.IdentityMapRegion(
+            physicalAddress,
+            PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission,
+            NUM_PAGES,
+            out _);
+        if (pageError != PageError.Success)
         {
-            PageError pageError = pagingManager.IdentityMapPage(
-                physicalAddress + i * EfiConstants.EFI_PAGE_SIZE,
-                PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
-            if (pageError != PageError.Success)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                using string err = ((int)pageError).ToString();
-                Console.WriteLine(
-                    "FATAL ERROR: Kernel parameters: could not map a page of the free kernel memory; error code: " +
-                    err);
-                Console.ForegroundColor = ConsoleColor.White;
-                return false;
-            }
+            Console.ForegroundColor = ConsoleColor.Red;
+            using string err = ((int)pageError).ToString();
+            Console.WriteLine(
+                "FATAL ERROR: Kernel parameters: could not map a page of the free kernel memory; error code: " +
+                err);
+            Console.ForegroundColor = ConsoleColor.White;
+            return false;
         }
 
         return true;

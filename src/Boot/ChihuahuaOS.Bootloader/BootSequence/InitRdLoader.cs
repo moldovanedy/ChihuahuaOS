@@ -9,9 +9,12 @@ namespace ChihuahuaOS.Bootloader.BootSequence;
 
 public static unsafe class InitRdLoader
 {
-    public static bool Load(EfiBootServices* bs, PagingManager pagingManager, OsVersion osVersion, out ulong fileSize)
+    public static bool Load(
+        EfiBootServices* bs,
+        PagingManager pagingManager,
+        OsVersion osVersion,
+        KParams* kParams)
     {
-        fileSize = 0;
         using string osVersionStr = osVersion.ToString();
         using string rdFilePath = "\\EFI\\BOOT\\init." + osVersionStr + ".rd";
         using FileStream? fs = File.OpenRead(rdFilePath);
@@ -27,7 +30,9 @@ public static unsafe class InitRdLoader
 
         ulong physicalAddress = 0;
         ulong requiredPages = ((ulong)fs.Length + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
-        fileSize = (ulong)fs.Length;
+
+        ulong fileSize = (ulong)fs.Length;
+        kParams->InitRdSize = fileSize;
 
         bool success = AllocatePhysicalMemory(bs, &physicalAddress, requiredPages);
         if (!success)
@@ -35,12 +40,21 @@ public static unsafe class InitRdLoader
             return false;
         }
 
+        //from the stack bottom, we leave at least 2 pages free, then use a random offset between 0 and 4096 pages
+        ulong baseAddress =
+            kParams->VirtualSpaceInfo.KStackBottom
+            - 2 * EfiConstants.EFI_PAGE_SIZE
+            - EfiConstants.EFI_PAGE_SIZE * requiredPages;
+        baseAddress -= Random.NextMersenne(0, 4096) * EfiConstants.EFI_PAGE_SIZE;
+        kParams->VirtualSpaceInfo.InitRdBase = baseAddress;
+        kParams->VirtualSpaceInfo.InitRdLimit = baseAddress + EfiConstants.EFI_PAGE_SIZE * requiredPages;
+
         for (ulong i = 0; i < requiredPages; i++)
         {
             ulong offsetPhysicalAddress = physicalAddress + i * EfiConstants.EFI_PAGE_SIZE;
             PageError pageError = pagingManager.MapPage(
                 offsetPhysicalAddress,
-                KVirtualAddresses.INITRD_BASE + i * EfiConstants.EFI_PAGE_SIZE,
+                baseAddress + i * EfiConstants.EFI_PAGE_SIZE,
                 PageFlags.Present | PageFlags.ReadPermission);
 
             if (pageError != PageError.Success)

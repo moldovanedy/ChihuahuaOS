@@ -11,11 +11,16 @@ public unsafe struct AvlTreeNode
 {
     public ulong VirtualStart { get; set; }
 
+    /// <summary>
+    /// The physical start of the region. If the region cannot be freed, this should be ignored as it might be 0.
+    /// </summary>
     public ulong PhysicalStart { get; set; }
 
     /// <summary>
     /// The lowest byte stores the node height and balance factor as such: the lowest 6 bits hold the height (&lt; 64),
     /// the 6th bit is the balance value (0 ro 1), the 7th bit holds the balance sign (0 for +, 1 for -).
+    /// The second byte has a single relevant bit: if bit 0 is set, it means the region cannot be freed (it is used
+    /// by UEFI or by the kernel).
     /// </summary>
     /// <remarks>
     /// According to Wikipedia (https://en.wikipedia.org/wiki/AVL_tree#Properties, the formula for the max height
@@ -80,6 +85,12 @@ public unsafe struct AvlTreeNode
         //reset the bits, then set them again
         Info &= ~0b0011_1111u;
         Info |= (uint)(height & 0b0011_1111);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsFreeable()
+    {
+        return (Info & 0x100) == 0;
     }
 
 
@@ -169,7 +180,6 @@ public unsafe struct AvlTreeNode
     {
         if (newNode->VirtualStart == VirtualStart)
         {
-            CoreLibManager.Panic((byte*)"AVL: Duplicate key in the tree\0"u8);
             return false;
         }
 

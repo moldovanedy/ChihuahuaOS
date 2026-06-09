@@ -1,6 +1,7 @@
 #if ARCH_X64
 using System.Runtime.CompilerServices;
 using ChihuahuaOS.CoreLib.Extra;
+using ChihuahuaOS.MemPaginator.ASM.X64;
 
 namespace ChihuahuaOS.MemPaginator.Implementations.X64;
 

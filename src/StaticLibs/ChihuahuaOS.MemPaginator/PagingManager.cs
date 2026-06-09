@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 
 #if ARCH_X64
+using ChihuahuaOS.MemPaginator.ASM.X64;
 using ChihuahuaOS.MemPaginator.Implementations.X64;
 #endif
 
@@ -21,6 +22,54 @@ public readonly unsafe struct PagingManager
 #if ARCH_X64
         _x64Paging = new X64Paging(rootPageTable, frameAllocator);
 #endif
+    }
+
+    public PageError MapRegion(
+        ulong physicalAddress,
+        ulong virtualAddress,
+        PageFlags flags,
+        ulong numPages,
+        out ulong numPagesSuccessfullyMapped,
+        bool canUseHugePages = false)
+    {
+        numPagesSuccessfullyMapped = 0;
+        for (ulong i = 0; i < numPages; i++)
+        {
+            PageError error = MapPage(
+                physicalAddress + i * PAGE_TABLE_SIZE,
+                virtualAddress + i * PAGE_TABLE_SIZE,
+                flags);
+            if (error != PageError.Success)
+            {
+                return error;
+            }
+
+            numPagesSuccessfullyMapped++;
+        }
+
+        return PageError.Success;
+    }
+
+    public PageError IdentityMapRegion(
+        ulong address,
+        PageFlags flags,
+        ulong numPages,
+        out ulong numPagesSuccessfullyMapped,
+        bool canUseHugePages = false)
+    {
+        numPagesSuccessfullyMapped = 0;
+        for (ulong i = 0; i < numPages; i++)
+        {
+            PageError error = IdentityMapPage(address + i * PAGE_TABLE_SIZE, flags);
+            if (error != PageError.Success)
+            {
+                return error;
+            }
+
+            numPagesSuccessfullyMapped++;
+        }
+
+        return PageError.Success;
     }
 
     /// <summary>

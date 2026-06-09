@@ -9,24 +9,24 @@ public static unsafe class Framebuffer
     public static uint Width { get; private set; }
     public static uint Height { get; private set; }
 
-    private static FbInfo* _fbInfo;
+    internal static FbInfo Info { get; private set; }
 
     internal static void Init()
     {
-        _fbInfo = Program.KernelParamsPtr->FramebufferInfo;
-        Width = _fbInfo->Width;
-        Height = _fbInfo->Height;
+        Info = Program.KernelParamsPtr->FramebufferInfo;
+        Width = Info.Width;
+        Height = Info.Height;
     }
 
     public static void Clear(SolidColor color)
     {
         uint rawColor = GetRawColor(color);
-        uint* gop = (uint*)KVirtualAddresses.GOP_BASE;
+        uint* gop = (uint*)Program.KernelParamsPtr->VirtualSpaceInfo.GopBase;
         for (int i = 0; i < Height; i++)
         {
             for (int j = 0; j < Width; j++)
             {
-                gop[i * _fbInfo->PixelsPerScanLine + j] = rawColor;
+                gop[i * Info.PixelsPerScanLine + j] = rawColor;
             }
         }
     }
@@ -49,7 +49,7 @@ public static unsafe class Framebuffer
         }
 
         uint rawColor = GetRawColor(color);
-        uint* gop = (uint*)KVirtualAddresses.GOP_BASE;
+        uint* gop = (uint*)Program.KernelParamsPtr->VirtualSpaceInfo.GopBase;
         for (int i = y; i < y + height; i++)
         {
             if (i >= Height)
@@ -64,7 +64,7 @@ public static unsafe class Framebuffer
                     break;
                 }
 
-                gop[i * _fbInfo->PixelsPerScanLine + j] = rawColor;
+                gop[i * Info.PixelsPerScanLine + j] = rawColor;
             }
         }
     }
@@ -85,16 +85,16 @@ public static unsafe class Framebuffer
         const uint BGRX32_BLUE_MASK = 0xFF_00_00_00;
 
         //fast route for RGBX32 or BGRX32
-        if (_fbInfo->RedBitmask == RGBX32_RED_MASK
-            && _fbInfo->GreenBitmask == RGBX32_GREEN_MASK
-            && _fbInfo->BlueBitmask == RGBX32_BLUE_MASK)
+        if (Info.RedBitmask == RGBX32_RED_MASK
+            && Info.GreenBitmask == RGBX32_GREEN_MASK
+            && Info.BlueBitmask == RGBX32_BLUE_MASK)
         {
             return color.Red | (uint)(color.Green << 8) | (uint)(color.Blue << 16);
         }
 
-        if (_fbInfo->RedBitmask == BGRX32_RED_MASK
-            && _fbInfo->GreenBitmask == BGRX32_GREEN_MASK
-            && _fbInfo->BlueBitmask == BGRX32_BLUE_MASK)
+        if (Info.RedBitmask == BGRX32_RED_MASK
+            && Info.GreenBitmask == BGRX32_GREEN_MASK
+            && Info.BlueBitmask == BGRX32_BLUE_MASK)
         {
             return (uint)(color.Red << 16) | (uint)(color.Green << 8) | color.Blue;
         }
@@ -102,7 +102,7 @@ public static unsafe class Framebuffer
         uint redCapacity = 1;
         for (int i = 0; i < NUM_BITS; i++)
         {
-            if (((_fbInfo->RedBitmask >> i) & 1) == 1)
+            if (((Info.RedBitmask >> i) & 1) == 1)
             {
                 redCapacity <<= 1;
             }
@@ -111,7 +111,7 @@ public static unsafe class Framebuffer
         uint greenCapacity = 1;
         for (int i = 0; i < NUM_BITS; i++)
         {
-            if (((_fbInfo->GreenBitmask >> i) & 1) == 1)
+            if (((Info.GreenBitmask >> i) & 1) == 1)
             {
                 greenCapacity <<= 1;
             }
@@ -120,7 +120,7 @@ public static unsafe class Framebuffer
         uint blueCapacity = 1;
         for (int i = 0; i < NUM_BITS; i++)
         {
-            if (((_fbInfo->BlueBitmask >> i) & 1) == 1)
+            if (((Info.BlueBitmask >> i) & 1) == 1)
             {
                 blueCapacity <<= 1;
             }
@@ -159,19 +159,19 @@ public static unsafe class Framebuffer
         int clearedBlueBits = 0;
         for (int i = 0; i < NUM_BITS; i++)
         {
-            if (((_fbInfo->RedBitmask >> i) & 1) == 1)
+            if (((Info.RedBitmask >> i) & 1) == 1)
             {
                 result |= ((redComponent >> clearedRedBits) & 1) << (NUM_BITS - i);
                 clearedRedBits++;
             }
 
-            if (((_fbInfo->GreenBitmask >> i) & 1) == 1)
+            if (((Info.GreenBitmask >> i) & 1) == 1)
             {
                 result |= ((greenComponent >> clearedGreenBits) & 1) << (NUM_BITS - i);
                 clearedGreenBits++;
             }
 
-            if (((_fbInfo->BlueBitmask >> i) & 1) == 1)
+            if (((Info.BlueBitmask >> i) & 1) == 1)
             {
                 result |= ((blueComponent >> clearedBlueBits) & 1) << (NUM_BITS - i);
                 clearedBlueBits++;

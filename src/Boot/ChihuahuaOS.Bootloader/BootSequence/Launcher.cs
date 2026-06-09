@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ChihuahuaOS.Bootloader.ASM;
 using ChihuahuaOS.Bootloader.EfiInteractions;
 using ChihuahuaOS.BootParams;
+using ChihuahuaOS.BootParams.ParamsData;
 using ChihuahuaOS.CoreLib.Extra;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.BootServices;
@@ -10,7 +12,7 @@ using ChihuahuaOS.Elf;
 using ChihuahuaOS.Elf.FileHeader;
 using ChihuahuaOS.Elf.ProgramHeader;
 using ChihuahuaOS.MemPaginator;
-using ChihuahuaOS.MinimalUtils;
+using ChihuahuaOS.MinimalUtils.ASM;
 using ChihuahuaOS.MinimalUtils.Toml;
 
 namespace ChihuahuaOS.Bootloader.BootSequence;
@@ -67,7 +69,7 @@ public static unsafe class Launcher
 
         if (success)
         {
-            Console.WriteLine("Set the display resolution.");
+            Console.WriteLine("Set the display resolution");
         }
         else
         {
@@ -75,7 +77,7 @@ public static unsafe class Launcher
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine(
                 "WARN: Could not change the display resolution according to the settings." +
-                " Continuing with the current mode.");
+                " Continuing with the current mode");
             Console.ForegroundColor = ConsoleColor.White;
         }
 
@@ -91,14 +93,14 @@ public static unsafe class Launcher
         }
 
         MemMap.EfiMap efiMap = efiMapOpt.Value;
-        Console.WriteLine("Retrieved the system memory map.");
+        Console.WriteLine("Retrieved the system memory map");
 
         success = MemMap.SetupPagingStructures(efiMap, out PagingManager? pagingManagerOpt);
         efiMap.Dispose();
 
         if (success && pagingManagerOpt != null)
         {
-            Console.WriteLine("Setup paging structures.");
+            Console.WriteLine("Setup paging structures");
         }
         else
         {
@@ -111,10 +113,17 @@ public static unsafe class Launcher
         }
 
         PagingManager pagingManager = pagingManagerOpt.Value;
-        success = LoadKernelInMemory(pagingManager, out ulong kEntryPoint);
+
+        Span<KernelExecutableInfo.SegmentDescriptor> segmentDescriptors =
+            stackalloc KernelExecutableInfo.SegmentDescriptor[255];
+        success = LoadKernelInMemory(
+            pagingManager,
+            segmentDescriptors,
+            out int numSegmentDescriptors,
+            out ulong kEntryPoint);
         if (success)
         {
-            Console.WriteLine("Loaded kernel in memory.");
+            Console.WriteLine("Loaded kernel in memory");
         }
         else
         {
@@ -122,40 +131,12 @@ public static unsafe class Launcher
             return;
         }
 
-        success = InitRdLoader.Load(bs, pagingManager, BootedOsVersion, out ulong initRdFileSize);
-        if (success)
-        {
-            Console.WriteLine("Loaded init-ramdisk in memory.");
-        }
-        else
-        {
-            Fail();
-            return;
-        }
-
-        success = AllocateKernelStackMemory(bs, pagingManager);
-        if (success)
-        {
-            Console.WriteLine("Allocated stack memory for the kernel.");
-        }
-        else
-        {
-            Fail();
-            return;
-        }
-
-        success = Gop.Remap(pagingManager);
-        if (success)
-        {
-            Console.WriteLine("Remapped the framebuffer for use in OS.");
-        }
-        else
-        {
-            Fail();
-            return;
-        }
-
-        success = KParamsSetter.Setup(bs, pagingManager, out KParams* kParams);
+        success = KParamsSetter.Setup(
+            bs,
+            pagingManager,
+            segmentDescriptors,
+            numSegmentDescriptors,
+            out KParams* kParams);
         if (success)
         {
             Console.WriteLine("Set the kernel parameters");
@@ -166,7 +147,38 @@ public static unsafe class Launcher
             return;
         }
 
-        kParams->InitRdSize = initRdFileSize;
+        success = AllocateKernelStackMemory(bs, pagingManager, kParams);
+        if (success)
+        {
+            Console.WriteLine("Allocated stack memory for the kernel");
+        }
+        else
+        {
+            Fail();
+            return;
+        }
+
+        success = InitRdLoader.Load(bs, pagingManager, BootedOsVersion, kParams);
+        if (success)
+        {
+            Console.WriteLine("Loaded init-ramdisk in memory");
+        }
+        else
+        {
+            Fail();
+            return;
+        }
+
+        success = Gop.Remap(pagingManager, kParams);
+        if (success)
+        {
+            Console.WriteLine("Remapped the framebuffer for use in OS");
+        }
+        else
+        {
+            Fail();
+            return;
+        }
 
         if (Environment.EfiSysTable == null)
         {
@@ -220,20 +232,19 @@ public static unsafe class Launcher
         kParams->EfiMemMapEntrySize = memMapEntrySize;
 
         ulong numPagesEfiMap = (memMapSize + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
-        for (ulong i = 0; i < numPagesEfiMap; i++)
+        //map as read-write so the kernel can sort the map
+        PageError pgError = pagingManager.IdentityMapRegion(
+            (ulong)memMap,
+            PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission,
+            numPagesEfiMap,
+            out _);
+        if (pgError != PageError.Success)
         {
-            //map as read-write so the kernel can sort the map
-            PageError pgError = pagingManager.IdentityMapPage(
-                (ulong)memMap + i * EfiConstants.EFI_PAGE_SIZE,
-                PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission);
-            if (pgError != PageError.Success)
-            {
-                SpinLocks.HaltingInfiniteLoop();
-            }
+            SpinLocks.HaltingInfiniteLoop();
         }
 
         ulong rootPageTable = pagingManager.GetRootPageTablePhysicalAddress();
-        SetupAndJumpToKernel.Call(rootPageTable, kEntryPoint, (ulong)kParams);
+        SetupAndJumpToKernel.Call(rootPageTable, kEntryPoint, (ulong)kParams, kParams->VirtualSpaceInfo.KStackTop);
 
         //NOTE: this is unreachable
         SpinLocks.HaltingInfiniteLoop();
@@ -263,9 +274,15 @@ public static unsafe class Launcher
         return true;
     }
 
-    private static bool LoadKernelInMemory(PagingManager pgManager, out ulong kernelEntryPoint)
+    private static bool LoadKernelInMemory(
+        PagingManager pgManager,
+        Span<KernelExecutableInfo.SegmentDescriptor> segmentDescriptors,
+        out int numSegmentDescriptors,
+        out ulong kernelEntryPoint)
     {
         kernelEntryPoint = 0;
+        numSegmentDescriptors = 0;
+
         using string osVersion = BootedOsVersion.ToString();
         using string kernelFilePath = "\\EFI\\BOOT\\ChihuahuaOS.Kernel." + osVersion + ".elf";
         using FileStream? fs = File.OpenRead(kernelFilePath);
@@ -319,17 +336,16 @@ public static unsafe class Launcher
                 pageFlags |= PageFlags.ExecutePermission;
             }
 
-            for (ulong i = 0; i < pageCount; i++)
-            {
-                PageError pageError = pgManager.MapPage(
-                    physicalAddress + EfiConstants.EFI_PAGE_SIZE * i,
-                    address + EfiConstants.EFI_PAGE_SIZE * i,
-                    pageFlags);
+            PageError pageError = pgManager.MapRegion(
+                physicalAddress,
+                address,
+                pageFlags,
+                pageCount,
+                out _);
 
-                if (pageError != PageError.Success)
-                {
-                    return 0;
-                }
+            if (pageError != PageError.Success)
+            {
+                return 0;
             }
 
             return physicalAddress;
@@ -364,6 +380,14 @@ public static unsafe class Launcher
 
             for (int i = 0; i < progHeaders.Length; i++)
             {
+                segmentDescriptors[numSegmentDescriptors] = new KernelExecutableInfo.SegmentDescriptor
+                {
+                    PhysicalStart = progHeaders[i].PhysicalAddress,
+                    VirtualStart = progHeaders[i].VirtualAddress,
+                    Size = progHeaders[i].SizeInMemory
+                };
+                numSegmentDescriptors++;
+
                 error = elfLoader.LoadExecutableSegment(ref progHeaders[i], allocator);
                 if (error != ElfError.Success && error != ElfError.ElfSectionNotLoadable)
                 {
@@ -384,12 +408,10 @@ public static unsafe class Launcher
         }
     }
 
-    private static bool AllocateKernelStackMemory(EfiBootServices* bs, PagingManager pgManager)
+    private static bool AllocateKernelStackMemory(EfiBootServices* bs, PagingManager pgManager, KParams* kParams)
     {
         const PageFlags KSTACK_PAGE_FLAGS = PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission;
-        const ulong KSTACK_SIZE = KVirtualAddresses.KERNEL_STACK_TOP - KVirtualAddresses.KERNEL_STACK_BOTTOM;
-        //last page will be the stack overrun protector
-        const ulong PAGE_COUNT = (KSTACK_SIZE + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE + 1;
+        const ulong PAGE_COUNT = VirtualAddressesInfo.KERNEL_STACK_SIZE / EfiConstants.EFI_PAGE_SIZE;
 
         ulong physicalAddress = 0;
         EfiStatus status = bs->AllocatePages(
@@ -407,38 +429,26 @@ public static unsafe class Launcher
             return false;
         }
 
-        RawMemory.MemSet((void*)physicalAddress, 0, PAGE_COUNT * EfiConstants.EFI_PAGE_SIZE);
+        ulong baseAddress = VirtualAddressesInfo.KERNEL_HIGHEST_POSSIBLE_STACK_TOP -
+                            VirtualAddressesInfo.KERNEL_STACK_SIZE;
+        baseAddress -= Random.NextMersenne(0, 2048) * EfiConstants.EFI_PAGE_SIZE;
+        kParams->VirtualSpaceInfo.KStackBottom = baseAddress;
+        kParams->VirtualSpaceInfo.KStackTop = baseAddress + VirtualAddressesInfo.KERNEL_STACK_SIZE;
 
-        //map the overrun page
-        PageError overrunPageError = pgManager.MapPage(
+        PageError pageError = pgManager.MapRegion(
             physicalAddress,
-            KVirtualAddresses.KERNEL_STACK_OVERRUN_PROTECTOR,
-            PageFlags.Present);
-        if (overrunPageError != PageError.Success)
+            baseAddress,
+            KSTACK_PAGE_FLAGS,
+            PAGE_COUNT,
+            out _);
+        if (pageError != PageError.Success)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            using string err = ((int)overrunPageError).ToString();
+            using string err = ((int)pageError).ToString();
             Console.WriteLine(
-                "FATAL ERROR: Kernel stack allocation: could not map the overrun page; error code: " + err);
+                "FATAL ERROR: Kernel stack allocation: could not map a page; error code: " + err);
             Console.ForegroundColor = ConsoleColor.White;
             return false;
-        }
-
-        for (ulong i = 0; i < PAGE_COUNT - 1; i++)
-        {
-            PageError pageError = pgManager.MapPage(
-                physicalAddress + EfiConstants.EFI_PAGE_SIZE * (i + 1),
-                KVirtualAddresses.KERNEL_STACK_BOTTOM + EfiConstants.EFI_PAGE_SIZE * i,
-                KSTACK_PAGE_FLAGS);
-            if (pageError != PageError.Success)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                using string err = ((int)pageError).ToString();
-                Console.WriteLine(
-                    "FATAL ERROR: Kernel stack allocation: could not map a page; error code: " + err);
-                Console.ForegroundColor = ConsoleColor.White;
-                return false;
-            }
         }
 
         return true;

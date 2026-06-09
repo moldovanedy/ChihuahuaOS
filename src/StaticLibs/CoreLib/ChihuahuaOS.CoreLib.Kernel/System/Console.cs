@@ -1,3 +1,5 @@
+using ChihuahuaOS.CoreLib.Extra;
+
 namespace System;
 
 public static unsafe class Console
@@ -99,6 +101,58 @@ public static unsafe class Console
         _print((byte*)"\n\0"u8);
     }
 
+    public static void WriteLine(int value, uint numBase = 10)
+    {
+        Span<byte> buffer = stackalloc byte[
+            numBase == 10
+                ? NumberParserNoAlloc.MAX_SYMBOLS_BASE_10
+                : NumberParserNoAlloc.MAX_SYMBOLS_BASE_2];
+        buffer.Clear();
+
+        NumberParserNoAlloc.ParseInteger(value, numBase, buffer);
+        ReadOnlySpan<byte> stringBuffer = buffer;
+        WriteLine(stringBuffer);
+    }
+
+    public static void WriteLine(uint value, uint numBase = 10)
+    {
+        Span<byte> buffer = stackalloc byte[
+            numBase == 10
+                ? NumberParserNoAlloc.MAX_SYMBOLS_BASE_10
+                : NumberParserNoAlloc.MAX_SYMBOLS_BASE_2];
+        buffer.Clear();
+
+        NumberParserNoAlloc.ParseInteger(value, numBase, buffer);
+        ReadOnlySpan<byte> stringBuffer = buffer;
+        WriteLine(stringBuffer);
+    }
+
+    public static void WriteLine(long value, uint numBase = 10)
+    {
+        Span<byte> buffer = stackalloc byte[
+            numBase == 10
+                ? NumberParserNoAlloc.MAX_SYMBOLS_BASE_10
+                : NumberParserNoAlloc.MAX_SYMBOLS_BASE_2];
+        buffer.Clear();
+
+        NumberParserNoAlloc.ParseInteger(value, numBase, buffer);
+        ReadOnlySpan<byte> stringBuffer = buffer;
+        WriteLine(stringBuffer);
+    }
+
+    public static void WriteLine(ulong value, uint numBase = 10)
+    {
+        Span<byte> buffer = stackalloc byte[
+            numBase == 10
+                ? NumberParserNoAlloc.MAX_SYMBOLS_BASE_10
+                : NumberParserNoAlloc.MAX_SYMBOLS_BASE_2];
+        buffer.Clear();
+
+        NumberParserNoAlloc.ParseInteger(value, numBase, buffer);
+        ReadOnlySpan<byte> stringBuffer = buffer;
+        WriteLine(stringBuffer);
+    }
+
     /// <summary>
     /// Extension
     /// </summary>
@@ -112,6 +166,58 @@ public static unsafe class Console
     public static void Write(ReadOnlySpan<byte> text)
     {
         _print((byte*)text);
+    }
+
+    public static void Write(int value, uint numBase = 10)
+    {
+        Span<byte> buffer = stackalloc byte[
+            numBase == 10
+                ? NumberParserNoAlloc.MAX_SYMBOLS_BASE_10
+                : NumberParserNoAlloc.MAX_SYMBOLS_BASE_2];
+        buffer.Clear();
+
+        NumberParserNoAlloc.ParseInteger(value, numBase, buffer);
+        ReadOnlySpan<byte> stringBuffer = buffer;
+        Write(stringBuffer);
+    }
+
+    public static void Write(uint value, uint numBase = 10)
+    {
+        Span<byte> buffer = stackalloc byte[
+            numBase == 10
+                ? NumberParserNoAlloc.MAX_SYMBOLS_BASE_10
+                : NumberParserNoAlloc.MAX_SYMBOLS_BASE_2];
+        buffer.Clear();
+
+        NumberParserNoAlloc.ParseInteger(value, numBase, buffer);
+        ReadOnlySpan<byte> stringBuffer = buffer;
+        Write(stringBuffer);
+    }
+
+    public static void Write(long value, uint numBase = 10)
+    {
+        Span<byte> buffer = stackalloc byte[
+            numBase == 10
+                ? NumberParserNoAlloc.MAX_SYMBOLS_BASE_10
+                : NumberParserNoAlloc.MAX_SYMBOLS_BASE_2];
+        buffer.Clear();
+
+        NumberParserNoAlloc.ParseInteger(value, numBase, buffer);
+        ReadOnlySpan<byte> stringBuffer = buffer;
+        Write(stringBuffer);
+    }
+
+    public static void Write(ulong value, uint numBase = 10)
+    {
+        Span<byte> buffer = stackalloc byte[
+            numBase == 10
+                ? NumberParserNoAlloc.MAX_SYMBOLS_BASE_10
+                : NumberParserNoAlloc.MAX_SYMBOLS_BASE_2];
+        buffer.Clear();
+
+        NumberParserNoAlloc.ParseInteger(value, numBase, buffer);
+        ReadOnlySpan<byte> stringBuffer = buffer;
+        Write(stringBuffer);
     }
 
     /// <summary>

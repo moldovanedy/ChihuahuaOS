@@ -69,7 +69,7 @@ public static partial class MemMap
             ulong numPages = (localMapSize + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
             ulong physAddress = 0;
             status = bs->AllocatePages(
-                EfiAllocateType.AllocateAnyPages, EfiMemoryType.ChihuahuaKernelMemory, numPages, &physAddress);
+                EfiAllocateType.AllocateAnyPages, EfiMemoryType.ChihuahuaEfiMemMap, numPages, &physAddress);
             if (status != EfiStatus.Success || physAddress == 0)
             {
                 Console.WriteLine("ERROR: could not allocate memory in GetMemoryMap");
@@ -139,7 +139,7 @@ public static partial class MemMap
             &FrameAllocator);
 
         const PageFlags USED_PAGE_FLAGS = PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission;
-        
+
         PagingManager pagingManager = pagingManagerOpt.Value;
         PageError pgError = pagingManager.IdentityMapPage(
             physAddress,
@@ -149,7 +149,7 @@ public static partial class MemMap
             Console.WriteLine("ERROR: could not identity map the root page table in SetupPaging (identity)");
             return false;
         }
-        
+
         for (int i = 0; i < memMap.ArrayLength; i++)
         {
             EfiMemoryDescriptor entry = memMap[i];
@@ -160,19 +160,15 @@ public static partial class MemMap
             //identity map (for used memory)
             if (needsIdentityMapping)
             {
-                for (ulong j = 0; j < entry.NumberOfPages; j++)
+                pgError = pagingManager.IdentityMapRegion(
+                    entry.PhysicalStart,
+                    USED_PAGE_FLAGS | PageFlags.ExecutePermission,
+                    entry.NumberOfPages,
+                    out _);
+                if (pgError != PageError.Success)
                 {
-
-                    ulong physicalAddress = entry.PhysicalStart + j * EfiConstants.EFI_PAGE_SIZE;
-
-                    pgError = pagingManager.IdentityMapPage(
-                        physicalAddress,
-                        USED_PAGE_FLAGS | PageFlags.ExecutePermission);
-                    if (pgError != PageError.Success)
-                    {
-                        Console.WriteLine("ERROR: could not set an address in SetupPaging");
-                        return false;
-                    }
+                    Console.WriteLine("ERROR: could not set an address in SetupPaging");
+                    return false;
                 }
             }
         }

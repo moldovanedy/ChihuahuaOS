@@ -3,6 +3,7 @@ using System.Runtime;
 using System.Runtime.InteropServices;
 using ChihuahuaOS.Bootloader.Tui;
 using ChihuahuaOS.CoreLib;
+using ChihuahuaOS.CoreLib.ASM;
 using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.EfiApi.BootServices;
 using ChihuahuaOS.EfiApi.EfiSysTable;
@@ -13,20 +14,6 @@ namespace ChihuahuaOS.Bootloader;
 
 internal static class Program
 {
-    //for future use (access embedded files without external APIs):
-    // objcopy -I binary -O elf64-x86-64 -B i386:x86-64 font.psf font.o
-    //
-    // unsafe static class Resources
-    // {
-    //     public static extern byte _binary_font_psf_start;
-    //     public static extern byte _binary_font_psf_end;
-    // }
-    //
-    // byte* start = (byte*)(&Resources._binary_font_psf_start);
-    // byte* end = (byte*)(&Resources._binary_font_psf_end);
-    // ulong size = (ulong)(end - start);
-    // byte* data = start;
-
     private static void Main()
     {
     }
@@ -38,6 +25,9 @@ internal static class Program
         systemTable->BootServices->SetWatchdogTimer(0, 0, 0, null);
         Environment.SetEfiSystemReferences(imageHandle, systemTable);
 
+        //execute instructions between the seeds so they are more random
+        Random.SeedLcg((int)Intrinsics.ReadTimestamp());
+
         CoreLibManager.Panic = &PanicHandler;
         CoreLibManager.PrimitiveDebug = &PrimitiveDebugHandler;
         CoreLibManager.Malloc = &MallocHandler;
@@ -46,6 +36,8 @@ internal static class Program
         Console.Clear();
         Console.CursorVisible = false;
         TuiRenderer.DrawPersistentElements();
+
+        Random.SeedMersenne(Intrinsics.ReadTimestamp());
 
         ConsoleKeyInfo keyStroke = new();
         while (true)
