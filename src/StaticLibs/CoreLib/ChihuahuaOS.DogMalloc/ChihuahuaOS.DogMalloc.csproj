@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="$(CustomSdkDir)ChihuahuaOS.CustomCoreLib.props" />
+
+    <PropertyGroup>
+        <RootNamespace>ChihuahuaOS.DogMalloc</RootNamespace>
+        <Configurations>Debug;Release;DebugUefi;ReleaseUefi</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../ChihuahuaOS.CoreLib/ChihuahuaOS.CoreLib.csproj" />
+    </ItemGroup>
+</Project>

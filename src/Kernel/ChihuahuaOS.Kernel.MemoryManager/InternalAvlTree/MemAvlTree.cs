@@ -6,9 +6,9 @@ using ChihuahuaOS.Kernel.MemoryManager.PMM;
 namespace ChihuahuaOS.Kernel.MemoryManager.InternalAvlTree;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct AvlTree
+public unsafe struct MemAvlTree
 {
-    public AvlTreeNode* Root { get; private set; }
+    public MemAvlTreeNode* Root { get; private set; }
 
     public ulong HeapEndPointer { get; set; }
 
@@ -16,35 +16,35 @@ public unsafe struct AvlTree
 
     private ulong LastFreeAvlChunkPhysAddress;
 
-    public AvlTree(AvlTreeNode* root)
+    public MemAvlTree(MemAvlTreeNode* root)
     {
         Root = root;
         LastFreeAvlChunkPhysAddress = (ulong)root / ChunkLevel1.MIN_CHUNK_SIZE * ChunkLevel1.MIN_CHUNK_SIZE;
-        AvlChunkManager.InitializeNewAvlChunk(root);
+        MemAvlChunkManager.InitializeNewAvlChunk(root);
     }
 
-    public AvlTreeNode* CreateNode(AvlTreeNode* parentHint, bool isFreeable = true)
+    public MemAvlTreeNode* CreateNode(MemAvlTreeNode* parentHint, bool isFreeable = true)
     {
         short offset;
-        if (parentHint != null && !AvlChunkManager.IsAvlChunkFull(parentHint))
+        if (parentHint != null && !MemAvlChunkManager.IsAvlChunkFull(parentHint))
         {
-            offset = AvlChunkManager.PopFreeSlot(parentHint);
+            offset = MemAvlChunkManager.PopFreeSlot(parentHint);
             if (offset < 0)
             {
                 CoreLibManager.Panic((byte*)"AVL: chunk not full, but offset negative\0"u8);
                 return null;
             }
 
-            AvlTreeNode* nodeArray = AvlChunkManager.GetAvlChunkArrayStart(parentHint);
+            MemAvlTreeNode* nodeArray = MemAvlChunkManager.GetAvlChunkArrayStart(parentHint);
             return Reinitialize(nodeArray + offset);
         }
 
-        AvlTreeNode* freeChunkArray;
+        MemAvlTreeNode* freeChunkArray;
         if (LastFreeAvlChunkPhysAddress > 0 &&
-            !AvlChunkManager.IsAvlChunkFull((AvlTreeNode*)LastFreeAvlChunkPhysAddress))
+            !MemAvlChunkManager.IsAvlChunkFull((MemAvlTreeNode*)LastFreeAvlChunkPhysAddress))
         {
-            freeChunkArray = (AvlTreeNode*)LastFreeAvlChunkPhysAddress;
-            offset = AvlChunkManager.PopFreeSlot(freeChunkArray);
+            freeChunkArray = (MemAvlTreeNode*)LastFreeAvlChunkPhysAddress;
+            offset = MemAvlChunkManager.PopFreeSlot(freeChunkArray);
             if (offset < 0)
             {
                 CoreLibManager.Panic((byte*)"AVL: chunk not full, but offset negative\0"u8);
@@ -54,11 +54,11 @@ public unsafe struct AvlTree
             return Reinitialize(freeChunkArray + offset);
         }
 
-        LastFreeAvlChunkPhysAddress = AvlChunkManager.AllocateNewAvlChunk();
-        freeChunkArray = (AvlTreeNode*)LastFreeAvlChunkPhysAddress;
-        AvlChunkManager.InitializeNewAvlChunk(freeChunkArray);
+        LastFreeAvlChunkPhysAddress = MemAvlChunkManager.AllocateNewAvlChunk();
+        freeChunkArray = (MemAvlTreeNode*)LastFreeAvlChunkPhysAddress;
+        MemAvlChunkManager.InitializeNewAvlChunk(freeChunkArray);
 
-        offset = AvlChunkManager.PopFreeSlot(freeChunkArray);
+        offset = MemAvlChunkManager.PopFreeSlot(freeChunkArray);
         if (offset < 0)
         {
             CoreLibManager.Panic((byte*)"AVL: chunk not full, but offset negative\0"u8);
@@ -68,7 +68,7 @@ public unsafe struct AvlTree
         return Reinitialize(freeChunkArray + offset, isFreeable);
 
 
-        static AvlTreeNode* Reinitialize(AvlTreeNode* newNode, bool isFreeable = true)
+        static MemAvlTreeNode* Reinitialize(MemAvlTreeNode* newNode, bool isFreeable = true)
         {
             newNode->VirtualStart = 0;
             newNode->PhysicalStart = 0;
@@ -103,7 +103,7 @@ public unsafe struct AvlTree
 
     public bool TryInsert(ulong virtualAddress, ulong physicalAddress, uint size, bool isFreeable = true)
     {
-        AvlTreeNode* newNode = CreateNode(null, isFreeable);
+        MemAvlTreeNode* newNode = CreateNode(null, isFreeable);
         newNode->VirtualStart = virtualAddress;
         newNode->PhysicalStart = physicalAddress;
         newNode->Size = size;
@@ -128,14 +128,14 @@ public unsafe struct AvlTree
         return true;
     }
 
-    public bool IsAddressFree(ulong address)
+    public bool IsChunkFree(ulong address, ulong size)
     {
-        return TryGetFreeAddress(address, address, 0) == address;
+        return TryGetFreeAddress(address, address, size) == address;
     }
 
     public ulong TryGetFreeAddress(ulong start, ulong end, ulong size)
     {
-        AvlTreeNode* current = Root;
+        MemAvlTreeNode* current = Root;
         while (start <= end)
         {
             ulong leftLimit = 0;
@@ -191,15 +191,15 @@ public unsafe struct AvlTree
         ancestorPointers[0] = (ulong)Root;
         int index = 1;
 
-        Root = AvlTreeNode.Delete(Root, virtualAddress, ancestorPointers, ref index);
+        Root = MemAvlTreeNode.Delete(Root, virtualAddress, ancestorPointers, ref index);
         RetraceDeletion(ancestorPointers, index);
     }
 
     #endregion
 
-    private static AvlTreeNode* RotateLeft(AvlTreeNode* x)
+    private static MemAvlTreeNode* RotateLeft(MemAvlTreeNode* x)
     {
-        AvlTreeNode* y = x->Right;
+        MemAvlTreeNode* y = x->Right;
         x->Right = y->Left;
         y->Left = x;
 
@@ -209,9 +209,9 @@ public unsafe struct AvlTree
         return y;
     }
 
-    private static AvlTreeNode* RotateRight(AvlTreeNode* y)
+    private static MemAvlTreeNode* RotateRight(MemAvlTreeNode* y)
     {
-        AvlTreeNode* x = y->Left;
+        MemAvlTreeNode* x = y->Left;
         y->Left = x->Right;
         x->Right = y;
 
@@ -227,7 +227,7 @@ public unsafe struct AvlTree
 
         for (; index >= 0; index--)
         {
-            AvlTreeNode* parent = (AvlTreeNode*)ancestors[index];
+            MemAvlTreeNode* parent = (MemAvlTreeNode*)ancestors[index];
             int oldHeight = parent->GetSubtreeHeight();
 
             //recalculate balance factor based on actual heights
@@ -238,7 +238,7 @@ public unsafe struct AvlTree
             if (bf == 2)
             {
                 //right-heavy
-                AvlTreeNode* rightChild = parent->Right;
+                MemAvlTreeNode* rightChild = parent->Right;
                 int rightLeftHeight = rightChild->Left == null ? -1 : rightChild->Left->GetSubtreeHeight();
                 int rightRightHeight = rightChild->Right == null ? -1 : rightChild->Right->GetSubtreeHeight();
 
@@ -254,7 +254,7 @@ public unsafe struct AvlTree
             else if (bf == -2)
             {
                 //left-heavy
-                AvlTreeNode* leftChild = parent->Left;
+                MemAvlTreeNode* leftChild = parent->Left;
                 int leftLeftHeight = leftChild->Left == null ? -1 : leftChild->Left->GetSubtreeHeight();
                 int leftRightHeight = leftChild->Right == null ? -1 : leftChild->Right->GetSubtreeHeight();
 
@@ -290,8 +290,8 @@ public unsafe struct AvlTree
             }
             else
             {
-                AvlTreeNode* grandParent = (AvlTreeNode*)ancestors[index - 1];
-                if (grandParent->Left == (AvlTreeNode*)ancestors[index])
+                MemAvlTreeNode* grandParent = (MemAvlTreeNode*)ancestors[index - 1];
+                if (grandParent->Left == (MemAvlTreeNode*)ancestors[index])
                 {
                     grandParent->Left = parent;
                 }
@@ -328,7 +328,7 @@ public unsafe struct AvlTree
 
         for (; index >= 0; index--)
         {
-            AvlTreeNode* parent = (AvlTreeNode*)ancestors[index];
+            MemAvlTreeNode* parent = (MemAvlTreeNode*)ancestors[index];
             int oldHeight = parent->GetSubtreeHeight();
 
             //recalculate balance factor based on actual heights
@@ -339,7 +339,7 @@ public unsafe struct AvlTree
             if (bf == 2)
             {
                 //right-heavy
-                AvlTreeNode* rightChild = parent->Right;
+                MemAvlTreeNode* rightChild = parent->Right;
                 int rightLeftHeight = rightChild->Left == null ? -1 : rightChild->Left->GetSubtreeHeight();
                 int rightRightHeight = rightChild->Right == null ? -1 : rightChild->Right->GetSubtreeHeight();
 
@@ -355,7 +355,7 @@ public unsafe struct AvlTree
             else if (bf == -2)
             {
                 //left-heavy
-                AvlTreeNode* leftChild = parent->Left;
+                MemAvlTreeNode* leftChild = parent->Left;
                 int leftLeftHeight = leftChild->Left == null ? -1 : leftChild->Left->GetSubtreeHeight();
                 int leftRightHeight = leftChild->Right == null ? -1 : leftChild->Right->GetSubtreeHeight();
 
@@ -391,8 +391,8 @@ public unsafe struct AvlTree
             }
             else
             {
-                AvlTreeNode* grandParent = (AvlTreeNode*)ancestors[index - 1];
-                if (grandParent->Left == (AvlTreeNode*)ancestors[index])
+                MemAvlTreeNode* grandParent = (MemAvlTreeNode*)ancestors[index - 1];
+                if (grandParent->Left == (MemAvlTreeNode*)ancestors[index])
                 {
                     grandParent->Left = parent;
                 }
@@ -424,14 +424,14 @@ public unsafe struct AvlTree
         }
     }
 
-    private static void UpdateBalanceFactor(AvlTreeNode* node)
+    private static void UpdateBalanceFactor(MemAvlTreeNode* node)
     {
         int leftHeight = node->Left == null ? -1 : node->Left->GetSubtreeHeight();
         int rightHeight = node->Right == null ? -1 : node->Right->GetSubtreeHeight();
         node->SetBalanceFactor(rightHeight - leftHeight);
     }
 
-    private static void UpdateSubtreeHeight(AvlTreeNode* node)
+    private static void UpdateSubtreeHeight(MemAvlTreeNode* node)
     {
         int leftSubHeight = 0;
         if (node->Left != null)

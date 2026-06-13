@@ -3,7 +3,7 @@ using ChihuahuaOS.Kernel.MemoryManager.PMM;
 
 namespace ChihuahuaOS.Kernel.MemoryManager.InternalAvlTree;
 
-internal static unsafe class AvlChunkManager
+internal static unsafe class MemAvlChunkManager
 {
     /// <summary>
     /// The maximum number of nodes in a chunk (sizeof(AvlTreeNode) = 40, AVL chunk = 32 KiB, from which 30 KiB are
@@ -28,7 +28,7 @@ internal static unsafe class AvlChunkManager
         MainMemManager.Pmm.Deallocate(ChunkLevel1.MIN_CHUNK_SIZE, (long)physicalAddress);
     }
 
-    internal static void InitializeNewAvlChunk(AvlTreeNode* avlNode)
+    internal static void InitializeNewAvlChunk(MemAvlTreeNode* avlNode)
     {
         short* array = GetAvlChunkFreeSlotsArray(avlNode);
 
@@ -39,31 +39,31 @@ internal static unsafe class AvlChunkManager
         array[0] = 1;
         for (int i = 1; i < MAX_NODES_IN_AVL_CHUNK - 1; i++)
         {
-            array[i] = (short)(i + 1);
+            array[i] = (short)(MAX_NODES_IN_AVL_CHUNK - 1 - i);
         }
 
         array[MAX_NODES_IN_AVL_CHUNK - 1] = -1;
     }
 
-    internal static short* GetAvlChunkFreeSlotsArray(AvlTreeNode* avlObject)
+    internal static short* GetAvlChunkFreeSlotsArray(MemAvlTreeNode* avlObject)
     {
         ulong avlChunkAddr = (ulong)avlObject / ChunkLevel1.MIN_CHUNK_SIZE * ChunkLevel1.MIN_CHUNK_SIZE;
         return (short*)(avlChunkAddr + ChunkLevel1.MIN_CHUNK_SIZE - sizeof(short) * MAX_NODES_IN_AVL_CHUNK);
     }
 
-    internal static AvlTreeNode* GetAvlChunkArrayStart(AvlTreeNode* avlObject)
+    internal static MemAvlTreeNode* GetAvlChunkArrayStart(MemAvlTreeNode* avlObject)
     {
-        return (AvlTreeNode*)((ulong)avlObject / ChunkLevel1.MIN_CHUNK_SIZE * ChunkLevel1.MIN_CHUNK_SIZE);
+        return (MemAvlTreeNode*)((ulong)avlObject / ChunkLevel1.MIN_CHUNK_SIZE * ChunkLevel1.MIN_CHUNK_SIZE);
     }
 
-    internal static bool IsAvlChunkFree(AvlTreeNode* avlNode)
+    internal static bool IsAvlChunkFree(MemAvlTreeNode* avlNode)
     {
         short* array = GetAvlChunkFreeSlotsArray(avlNode);
         short stackPointer = *(array - 1);
         return stackPointer == MAX_NODES_IN_AVL_CHUNK - 1;
     }
 
-    internal static bool IsAvlChunkFull(AvlTreeNode* avlNode)
+    internal static bool IsAvlChunkFull(MemAvlTreeNode* avlNode)
     {
         short* array = GetAvlChunkFreeSlotsArray(avlNode);
         short stackPointer = *(array - 1);
@@ -75,7 +75,7 @@ internal static unsafe class AvlChunkManager
     /// </summary>
     /// <param name="avlNode">Any node that's in the AVL chunk that you are working on.</param>
     /// <param name="offset"></param>
-    internal static void PushFreeSlot(AvlTreeNode* avlNode, short offset)
+    internal static void PushFreeSlot(MemAvlTreeNode* avlNode, short offset)
     {
         short* array = GetAvlChunkFreeSlotsArray(avlNode);
         short stackPointer = *(array - 1);
@@ -95,7 +95,7 @@ internal static unsafe class AvlChunkManager
     /// </summary>
     /// <param name="avlNode">Any node that's in the AVL chunk that you are working on.</param>
     /// <returns>-1 if it fails, otherwise the offset in the AVL chunk of a free slot.</returns>
-    internal static short PopFreeSlot(AvlTreeNode* avlNode)
+    internal static short PopFreeSlot(MemAvlTreeNode* avlNode)
     {
         short* array = GetAvlChunkFreeSlotsArray(avlNode);
         short stackPointer = *(array - 1);

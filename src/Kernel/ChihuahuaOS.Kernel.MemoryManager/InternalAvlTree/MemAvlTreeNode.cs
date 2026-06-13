@@ -7,7 +7,7 @@ using ChihuahuaOS.Kernel.MemoryManager.PMM;
 namespace ChihuahuaOS.Kernel.MemoryManager.InternalAvlTree;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct AvlTreeNode
+public unsafe struct MemAvlTreeNode
 {
     public ulong VirtualStart { get; set; }
 
@@ -31,8 +31,8 @@ public unsafe struct AvlTreeNode
 
     public uint Size { get; set; }
 
-    public AvlTreeNode* Left { get; internal set; }
-    public AvlTreeNode* Right { get; internal set; }
+    public MemAvlTreeNode* Left { get; internal set; }
+    public MemAvlTreeNode* Right { get; internal set; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -95,7 +95,7 @@ public unsafe struct AvlTreeNode
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static int ComputeBalanceFactor(AvlTreeNode* node)
+    internal static int ComputeBalanceFactor(MemAvlTreeNode* node)
     {
         int rightSubHeight = node->Right == null ? 0 : node->Right->GetSubtreeHeight();
         int leftSubHeight = node->Left == null ? 0 : node->Left->GetSubtreeHeight();
@@ -105,8 +105,8 @@ public unsafe struct AvlTreeNode
     /// <returns>
     /// Returns the new descendant of the parent node.
     /// </returns>
-    internal static AvlTreeNode* Delete(
-        AvlTreeNode* parentNode,
+    internal static MemAvlTreeNode* Delete(
+        MemAvlTreeNode* parentNode,
         ulong virtualAddress,
         Span<ulong> ancestors,
         ref int index)
@@ -123,13 +123,13 @@ public unsafe struct AvlTreeNode
             //one child
             if (parentNode->Left == null || parentNode->Right == null)
             {
-                AvlTreeNode* replacingChild = parentNode->Left == null ? parentNode->Right : parentNode->Left;
+                MemAvlTreeNode* replacingChild = parentNode->Left == null ? parentNode->Right : parentNode->Left;
                 FreeNode(parentNode);
                 return replacingChild;
             }
 
             //two children
-            AvlTreeNode* replacingNode = parentNode->Left;
+            MemAvlTreeNode* replacingNode = parentNode->Left;
             if (replacingNode == null)
             {
                 CoreLibManager.Panic((byte*)"AVL: assertion failed: replacingNode (Left subtree) was null\0"u8);
@@ -141,7 +141,7 @@ public unsafe struct AvlTreeNode
                 replacingNode = replacingNode->Right;
             }
 
-            AvlTreeNode* minLeftSubtree = replacingNode;
+            MemAvlTreeNode* minLeftSubtree = replacingNode;
 
             //move data
             //NOTE: Info does not need moving (at least not the part with the balance factors and subtree height)
@@ -176,7 +176,7 @@ public unsafe struct AvlTreeNode
     }
 
 
-    internal bool TryInsert(AvlTreeNode* newNode, Span<ulong> ancestors, ref int index)
+    internal bool TryInsert(MemAvlTreeNode* newNode, Span<ulong> ancestors, ref int index)
     {
         if (newNode->VirtualStart == VirtualStart)
         {
@@ -225,9 +225,9 @@ public unsafe struct AvlTreeNode
         // ReSharper restore RedundantIfElseBlock
     }
 
-    internal AvlTreeNode* Search(ulong virtualAddress, Span<ulong> ancestors, ref int index)
+    internal MemAvlTreeNode* Search(ulong virtualAddress, Span<ulong> ancestors, ref int index)
     {
-        fixed (AvlTreeNode* thisPtr = &this)
+        fixed (MemAvlTreeNode* thisPtr = &this)
         {
             if (virtualAddress == VirtualStart)
             {
@@ -257,11 +257,11 @@ public unsafe struct AvlTreeNode
         }
     }
 
-    private static void FreeNode(AvlTreeNode* node)
+    private static void FreeNode(MemAvlTreeNode* node)
     {
-        AvlTreeNode* avlChunkStart =
-            (AvlTreeNode*)((ulong)node / ChunkLevel1.MIN_CHUNK_SIZE * ChunkLevel1.MIN_CHUNK_SIZE);
-        int offset = (int)(node - avlChunkStart) / sizeof(AvlTreeNode);
-        AvlChunkManager.PushFreeSlot(avlChunkStart, (short)offset);
+        MemAvlTreeNode* avlChunkStart =
+            (MemAvlTreeNode*)((ulong)node / ChunkLevel1.MIN_CHUNK_SIZE * ChunkLevel1.MIN_CHUNK_SIZE);
+        int offset = (int)(node - avlChunkStart) / sizeof(MemAvlTreeNode);
+        MemAvlChunkManager.PushFreeSlot(avlChunkStart, (short)offset);
     }
 }

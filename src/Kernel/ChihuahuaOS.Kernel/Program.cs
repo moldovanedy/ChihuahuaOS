@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using ChihuahuaOS.BootParams;
 using ChihuahuaOS.CoreLib;
 using ChihuahuaOS.CoreLib.ASM;
-using ChihuahuaOS.EfiApi;
 using ChihuahuaOS.Kernel.FramebufferManager;
 using ChihuahuaOS.Kernel.MemoryManager;
 using ChihuahuaOS.Kernel.MemoryManager.PMM;
@@ -40,39 +39,50 @@ internal static unsafe class Program
             KernelParamsPtr->EfiMemMapEntrySize);
         efiMap.Sort();
 
+        InitializeMemoryManagers(ref efiMap);
+
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        Console.WriteLine("System stopped, you can safely shut down the device.\0"u8);
+        SpinLocks.HaltingInfiniteLoop();
+    }
+
+    private static void InitializeMemoryManagers(ref EfiMapWrapper efiMap)
+    {
         PagingManager kPagingManager = new(
             (PageTable*)PagingManager.GetRootPageTableInitial(),
-            &PmmPageFrameAllocator.AllocPageFramesRaw);
+            &PageFrameAllocator.AllocPageFramesRaw);
         MainMemManager.KernelSetupPagingManager(ref kPagingManager);
 
-        PmmPageFrameAllocator.SetFreeKernelMemoryStart(KernelParamsPtr->FreeMemChunkPhysicalAddress);
+        PageFrameAllocator.SetFreeKernelMemoryStart(KernelParamsPtr->FreeMemChunkPhysicalAddress);
         PhysicalMemManager pmm = new(efiMap);
         MainMemManager.KernelSetupPmm(ref pmm);
         Console.WriteLine("Setup physical memory manager (PMM)\0"u8);
+
+        //update the paging manager so it directly uses the PMM instead of the free kernel memory
+        PageFrameAllocator.Reset();
+        kPagingManager = new PagingManager(
+            (PageTable*)PagingManager.GetRootPageTableInitial(),
+            &PageFrameAllocator.AllocPageFramesFromPmm);
+        MainMemManager.KernelSetupPagingManager(ref kPagingManager);
 
         MainMemManager.Pmm.InitializeFromEfiMap(efiMap);
         Console.WriteLine("Initialized PMM from EFI memory map\0"u8);
 
         VirtualMemManager vmm = new();
-        Console.WriteLine("Setup virtual memory manager (VMM)\0"u8);
         MainMemManager.KernelSetupVmm(ref vmm);
+        Console.WriteLine("Setup virtual memory manager (VMM)\0"u8);
 
         MainMemManager.Vmm.InitializeFromCurrentState(efiMap, KernelParamsPtr);
         Console.WriteLine("Initialized VMM from the current memory state\0"u8);
 
-        //create the initial kernel heap (64 KiB)
-        ulong address = MainMemManager.Vmm.AllocateKernelVirtualMem(16 * EfiConstants.EFI_PAGE_SIZE);
-        if (address == 0)
-        {
-            CoreLibManager.Panic((byte*)"Kernel VMM: failed to allocate the initial kernel heap!\0"u8);
-        }
+        //now again, so it uses the VMM
+        PageFrameAllocator.Reset();
+        kPagingManager = new PagingManager(
+            (PageTable*)PagingManager.GetRootPageTableInitial(),
+            &PageFrameAllocator.AllocPageFramesFromVmm);
+        MainMemManager.KernelSetupPagingManager(ref kPagingManager);
 
-        Console.Write("Successfully allocated kernel heap at address 0x\0"u8);
-        Console.WriteLine(address, 16);
-
-        Console.ForegroundColor = ConsoleColor.Magenta;
-        Console.WriteLine("System stopped, you can safely shut down the device.\0"u8);
-        SpinLocks.HaltingInfiniteLoop();
+        HeapManager.Init();
     }
 
 

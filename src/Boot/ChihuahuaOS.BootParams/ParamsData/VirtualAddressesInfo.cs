@@ -9,7 +9,7 @@ public struct VirtualAddressesInfo
 
     public const ulong KERNEL_HIGHEST_POSSIBLE_STACK_TOP = 0xFFFF_FFFF_FFFF_0000;
 
-    public const ulong KERNEL_STACK_SIZE = 16 * 1024 * 1024;
+    public const ulong KERNEL_STACK_SIZE = 256 * 1024;
 
     public ulong KStackTop;
     public ulong KStackBottom;

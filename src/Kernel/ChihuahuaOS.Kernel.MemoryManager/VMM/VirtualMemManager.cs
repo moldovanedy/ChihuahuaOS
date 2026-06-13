@@ -13,7 +13,11 @@ namespace ChihuahuaOS.Kernel.MemoryManager.VMM;
 
 public struct VirtualMemManager
 {
-    private AvlTree _kernelTree;
+    private MemAvlTree _kernelTree;
+
+    //2 MiB and 64 MiB, respectively
+    private const ulong MEM_SIZE_MEDIUM = 2 * 1024 * 1024;
+    private const ulong MEM_SIZE_LARGE = 32 * MEM_SIZE_MEDIUM;
 
     public VirtualMemManager()
     {
@@ -50,7 +54,7 @@ public struct VirtualMemManager
 
             //identity map, since the EFI map generally doesn't have the virtual address set
             ulong totalSize = efiMap[i].NumberOfPages * EfiConstants.EFI_PAGE_SIZE;
-            MapArea(efiMap[i].PhysicalStart, efiMap[i].PhysicalStart, totalSize, ref _kernelTree, isFreeable);
+            VirtuallyMapArea(efiMap[i].PhysicalStart, efiMap[i].PhysicalStart, totalSize, ref _kernelTree, isFreeable);
         }
 
         //map the kernel executable memory
@@ -61,7 +65,7 @@ public struct VirtualMemManager
                 (descriptor.Size + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE *
                 EfiConstants.EFI_PAGE_SIZE;
 
-            MapArea(
+            VirtuallyMapArea(
                 descriptor.VirtualStart,
                 descriptor.PhysicalStart,
                 usedSizeNormalized,
@@ -79,19 +83,19 @@ public struct VirtualMemManager
         _kernelTree.HeapEndPointer += Random.NextMersenne(0, 1 << 13) * EfiConstants.EFI_PAGE_SIZE;
 
         //map the kernel-used memory
-        MapArea(
+        VirtuallyMapArea(
             kParams->VirtualSpaceInfo.KStackBottom,
             0,
             kParams->VirtualSpaceInfo.KStackTop - kParams->VirtualSpaceInfo.KStackBottom,
             ref _kernelTree,
             false);
-        MapArea(
+        VirtuallyMapArea(
             kParams->VirtualSpaceInfo.InitRdBase,
             0,
             kParams->VirtualSpaceInfo.InitRdLimit - kParams->VirtualSpaceInfo.InitRdBase,
             ref _kernelTree,
             false);
-        MapArea(
+        VirtuallyMapArea(
             kParams->VirtualSpaceInfo.GopBase,
             0,
             kParams->VirtualSpaceInfo.GopLimit - kParams->VirtualSpaceInfo.GopBase,
@@ -99,7 +103,7 @@ public struct VirtualMemManager
             false);
 
         //map the PMM chunks
-        MapArea(
+        VirtuallyMapArea(
             (ulong)MainMemManager.Pmm.RootChunkPtr,
             (ulong)MainMemManager.Pmm.RootChunkPtr,
             (ulong)sizeof(ChunkLevel2),
@@ -114,7 +118,7 @@ public struct VirtualMemManager
                 break;
             }
 
-            MapArea(
+            VirtuallyMapArea(
                 descriptor.Entry,
                 descriptor.Entry,
                 (ulong)sizeof(ChunkLevel1),
@@ -123,9 +127,31 @@ public struct VirtualMemManager
         }
     }
 
-    public ulong AllocateKernelVirtualMem(ulong size)
+    public ulong ExpandKernelHeap(ulong withSize)
     {
-        return AllocateVirtualMem(size, ref _kernelTree, _kernelTree.HeapEndPointer);
+        return AllocateVirtualMem(
+            withSize,
+            ref _kernelTree,
+            _kernelTree.HeapEndPointer,
+            PageFlags.Present | PageFlags.ReadPermission | PageFlags.WritePermission,
+            false,
+            VirtualSegmentType.Heap);
+    }
+
+    public ulong AllocateKernelVirtualMem(
+        ulong size,
+        ulong minVirtualAddress,
+        PageFlags flags,
+        bool isFixedVirtualAddress = false,
+        VirtualSegmentType segmentType = VirtualSegmentType.Unknown)
+    {
+        return AllocateVirtualMem(
+            size,
+            ref _kernelTree,
+            minVirtualAddress,
+            flags,
+            isFixedVirtualAddress,
+            segmentType);
     }
 
     /// <summary>
@@ -134,32 +160,70 @@ public struct VirtualMemManager
     /// <param name="size">
     /// The size (in bytes) that you want to allocate. Must be of 4 KiB granularity (i.e., divisible by 4096).
     /// </param>
-    /// <param name="avlTree">The avl tree.</param>
+    /// <param name="memAvlTree">The avl tree.</param>
     /// <param name="minVirtualAddress">
     /// The virtual address hint that the kernel tries to use, but it's not obligated; it can be higher in virtual
     /// address, but never lower.
     /// </param>
+    /// <param name="flags">The memory mapping flags.</param>
+    /// <param name="isFixedVirtualAddress">
+    /// If true, will treat minVirtualAddress as a fixed, mandatory address, so it won't go higher than it.
+    /// </param>
+    /// <param name="segmentType">
+    /// The virtual segment type of the allocated memory. It is by default unknown.
+    /// </param>
     /// <returns>The chunk's virtual address start or 0 if the allocation failed</returns>
-    public static ulong AllocateVirtualMem(ulong size, ref AvlTree avlTree, ulong minVirtualAddress)
+    public static ulong AllocateVirtualMem(
+        ulong size,
+        ref MemAvlTree memAvlTree,
+        ulong minVirtualAddress,
+        PageFlags flags,
+        bool isFixedVirtualAddress = false,
+        VirtualSegmentType segmentType = VirtualSegmentType.Unknown)
     {
+        const ulong MAX_SEARCHED_OFFSET = 4 * 1024 * EfiConstants.EFI_PAGE_SIZE;
+        size = (size + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE * EfiConstants.EFI_PAGE_SIZE;
+
         long physicalAddress = MainMemManager.Pmm.Allocate((long)size);
+        //if a large block is requested, we split the physical allocation in smaller chunks
         if (physicalAddress <= 0)
+        {
+            //if the entire virtual chunk is free, proceed
+            if (memAvlTree.IsChunkFree(minVirtualAddress, size))
+            {
+                return AllocateVirtualMemChunked(size, ref memAvlTree, minVirtualAddress, flags);
+            }
+
+            if (isFixedVirtualAddress)
+            {
+                return 0;
+            }
+
+            //otherwise, search for a free address (note that this only happens at start, as the chunks MUST
+            // be continuous in virtual memory) and retry
+            minVirtualAddress = memAvlTree.TryGetFreeAddress(
+                minVirtualAddress,
+                minVirtualAddress + MAX_SEARCHED_OFFSET,
+                size);
+            if (minVirtualAddress == 0)
+            {
+                return 0;
+            }
+
+            return AllocateVirtualMemChunked(size, ref memAvlTree, minVirtualAddress, flags);
+        }
+
+        if (memAvlTree.IsChunkFree(minVirtualAddress, size))
+        {
+            return MapArea(minVirtualAddress, physicalAddress, size, flags, ref memAvlTree, segmentType);
+        }
+
+        if (isFixedVirtualAddress)
         {
             return 0;
         }
 
-        bool success;
-        if (avlTree.IsAddressFree(minVirtualAddress))
-        {
-            success = MapArea(minVirtualAddress, (ulong)physicalAddress, size, ref avlTree);
-            if (success)
-            {
-                return minVirtualAddress;
-            }
-        }
-
-        const ulong MAX_SEARCHED_OFFSET = 4 * 1024 * EfiConstants.EFI_PAGE_SIZE;
-        minVirtualAddress = avlTree.TryGetFreeAddress(
+        minVirtualAddress = memAvlTree.TryGetFreeAddress(
             minVirtualAddress,
             minVirtualAddress + MAX_SEARCHED_OFFSET,
             size);
@@ -169,16 +233,65 @@ public struct VirtualMemManager
             return 0;
         }
 
-        success = MapArea(minVirtualAddress, (ulong)physicalAddress, size, ref avlTree);
-        if (success)
-        {
-            return minVirtualAddress;
-        }
-
-        MainMemManager.Pmm.Deallocate((long)size, physicalAddress);
-        return 0;
+        return MapArea(minVirtualAddress, physicalAddress, size, flags, ref memAvlTree, segmentType);
     }
 
+    /// <summary>
+    /// NOTE: this is only for a temporary stage of the page frame allocator, don't use this afterwards.
+    /// </summary>
+    /// <returns></returns>
+    internal bool VirtuallyMapKernelArea(
+        ulong virtualStart,
+        ulong physicalStart,
+        ulong totalSize,
+        bool isFreeable = true)
+    {
+        return VirtuallyMapArea(virtualStart, physicalStart, totalSize, ref _kernelTree, isFreeable);
+    }
+
+
+    private static ulong AllocateVirtualMemChunked(
+        ulong size,
+        ref MemAvlTree memAvlTree,
+        ulong fixedVirtualAddress,
+        PageFlags flags)
+    {
+        ulong chunkSize;
+        switch (size)
+        {
+            case >= MEM_SIZE_LARGE:
+                chunkSize = MEM_SIZE_LARGE;
+                break;
+            case >= MEM_SIZE_MEDIUM:
+                chunkSize = MEM_SIZE_MEDIUM;
+                break;
+            default:
+                chunkSize = size;
+                break;
+        }
+
+        ulong numChunks = (size + (chunkSize - 1)) / chunkSize;
+        for (ulong i = 0; i < numChunks; i++)
+        {
+            ulong allocSize = Math.Min(size, chunkSize);
+            ulong intermediateAddress = AllocateVirtualMem(
+                allocSize,
+                ref memAvlTree,
+                fixedVirtualAddress,
+                flags,
+                true);
+
+            size -= allocSize;
+            fixedVirtualAddress += allocSize;
+
+            if (intermediateAddress == 0)
+            {
+                return 0;
+            }
+        }
+
+        return fixedVirtualAddress;
+    }
 
     private bool SetupKernelAvlTree()
     {
@@ -201,24 +314,69 @@ public struct VirtualMemManager
         unsafe
         {
             RawMemory.MemSet((void*)avlPhysAddress, 0, ChunkLevel1.MIN_CHUNK_SIZE);
-            _kernelTree = new AvlTree((AvlTreeNode*)avlPhysAddress);
+            _kernelTree = new MemAvlTree((MemAvlTreeNode*)avlPhysAddress);
         }
 
         return true;
     }
 
-    private static bool MapArea(
+    /// <summary>
+    /// This will update the VMM structures to mark this memory used and also map the memory in the paging structures.
+    /// </summary>
+    /// <returns></returns>
+    private static ulong MapArea(
+        ulong virtualAddress,
+        long physicalAddress,
+        ulong size,
+        PageFlags flags,
+        ref MemAvlTree memAvlTree,
+        VirtualSegmentType segmentType = VirtualSegmentType.Unknown)
+    {
+        bool success = VirtuallyMapArea(virtualAddress, (ulong)physicalAddress, size, ref memAvlTree);
+        if (!success)
+        {
+            MainMemManager.Pmm.Deallocate((long)size, physicalAddress);
+            return 0;
+        }
+
+        ulong numPages = (size + (EfiConstants.EFI_PAGE_SIZE - 1)) / EfiConstants.EFI_PAGE_SIZE;
+        PageError pageError = MainMemManager.KPagingManager.MapRegion(
+            (ulong)physicalAddress,
+            virtualAddress,
+            flags,
+            numPages,
+            out _);
+        if (pageError != PageError.Success)
+        {
+            MainMemManager.Pmm.Deallocate((long)size, physicalAddress);
+            return 0;
+        }
+
+        if (segmentType == VirtualSegmentType.Heap)
+        {
+            memAvlTree.HeapEndPointer = virtualAddress + size;
+        }
+
+        return virtualAddress;
+    }
+
+    /// <summary>
+    /// Refers to updating VMM structures to indicate that this region is occupied, not actually mapping the memory
+    /// in the paging structures.
+    /// </summary>
+    /// <returns></returns>
+    private static bool VirtuallyMapArea(
         ulong virtualStart,
         ulong physicalStart,
         ulong totalSize,
-        ref AvlTree avlTree,
+        ref MemAvlTree memAvlTree,
         bool isFreeable = true)
     {
         ulong mappedSize = 0;
         while (totalSize > 0)
         {
             ulong size = Math.Min(uint.MaxValue, totalSize);
-            bool success = avlTree.TryInsert(
+            bool success = memAvlTree.TryInsert(
                 virtualStart + mappedSize,
                 physicalStart + mappedSize,
                 (uint)size,

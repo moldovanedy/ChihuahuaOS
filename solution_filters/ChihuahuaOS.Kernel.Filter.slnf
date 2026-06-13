@@ -11,6 +11,7 @@
       "StaticLibs\\ChihuahuaOS.MinimalUtils\\ChihuahuaOS.MinimalUtils.csproj",
       "StaticLibs\\CoreLib\\ChihuahuaOS.CoreLib.Kernel\\ChihuahuaOS.CoreLib.Kernel.csproj",
       "StaticLibs\\CoreLib\\ChihuahuaOS.CoreLib\\ChihuahuaOS.CoreLib.csproj",
+      "StaticLibs\\CoreLib\\ChihuahuaOS.DogMalloc\\ChihuahuaOS.DogMalloc.csproj",
       "StaticLibs\\FileSystems\\ChihuahuaOS.Fs.Ustar\\ChihuahuaOS.Fs.Ustar.csproj"
     ]
   }
